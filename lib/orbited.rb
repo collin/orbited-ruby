@@ -1,17 +1,25 @@
+require 'logger'
+require 'yaml'
+require 'pathname'
+require 'extlib/assertions'
+require 'extlib/hook'
+require 'json'
+
+Pathname.send :alias_method, :/, :+
+
 module Orbited
-  module Transport
-    Map = {
-      'xhrstream' => XHRStreaming,
-      'htmlfile' => HTMLFile,
-      'sse' => SSE,
-      'longpoll' => LongPolling,
-      'poll' => Polling
-    }
-    
-    def self.create transport_name, connection
-      klass = Map[transport_name]
-      return unless klass
-      klass.new connection
-    end
+  
+  def self.logger
+    return @logger if @logger
+    @logger       = Logger.new STDOUT
+    @logger.level = Logger::DEBUG
+    @logger.progname = "orbited-ruby"
+    @logger.info "Started Logging"
+    @logger
   end
+  
+  def self.root
+    Pathname.new(File.dirname __FILE__)
+  end
+  
 end

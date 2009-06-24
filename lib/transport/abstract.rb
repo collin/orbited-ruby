@@ -1,40 +1,48 @@
 module Orbited
   module Transport
-    class Abstract
+    class Abstract < EventMachine::Connection
+      include Extlib::Hook
+      
       HeartbeatInterval = 5
       MaxBytes = 1048576
-      CacheControl = 'no-cache, must-revalidate'
       
-      attr_accessor :connection
-      attr_accessor :open
-      attr_accessor :closed
-      attr_accessor :heartbeat_timer
+      attr_reader :open
+      attr_reader :closed
+      attr_reader :heartbeat_timer
       
       alias closed? closed
       alias open? open
       
-      def initialize connection
-        self.connection = connection
+      def initialize 
         @open = false
         @closed = false
+        super
+      end
+      
+      before(:post_init) { headers.merge Transport.headers[config_name] }
+      
+      def config_name
+        @config_name ||= self.class.name.split("::").last
+      end
+      
+      def response
+        [200, headers, "ok"]
+      end
+      
+      def headers
+        @headers ||= {}
       end
       
       def render(request)
         @open = true
-        self.packets = []
-        self.request = request
-        @opened
-        self.resetHeartbeat
-#        self.closeDeferred = defer.Deferred
-#        self.conn.transportOpened
-#        return server.NOT_DONE_YET
+        @packets = []
+        @request = request
+        opened
+        reset_heartbeat
       end
 
-     def resetHeartbeat
-        self.heartbeat_timer = 
-          EventMachine::add_timer(HeartbeatInterval) do
-            do_heartbeat
-          end
+      def resetHeartbeat
+        @heartbeat_timer = EM::add_timer(HeartbeatInterval) &method(:do_heartbeat)
       end
   
       def do_heartbeat
@@ -47,37 +55,34 @@ module Orbited
       end
 
       def sendPacket(packet)
-        self.packets << packet
+        @packets << packet
       end
 
       def flush
         write packets
-        self.packets = []
+        @packets = []
         heartbeat_timer.cancel
         reset_heartbeat
       end
 
-      def onClose
-        logger.debug('onClose called')
-        return self.closeDeferred
+      def unbind
+        Orbited.logger.debug('unbind called')
 
-      def close
         if closed?
-            logger.debug('close called - already closed')
-            return
+          Orbited.logger.debug("close called - already closed", inspect)
+          return
         end
+        
         @closed = true
         heartbeat_timer.cancel
         @open = false
         
         if request
-          logger.debug('calling finish')
+          Orbited.logger.debug('calling finish', inspect)
           request.finish
         end
         
-        self.request = nil
-        self.closeDeferred.callback
-        self.closeDeferred = nil
+        @request = nil
       end
 
       def encode(packets)
@@ -99,12 +104,15 @@ module Orbited
         raise "Unimplemented"
       end
 
-      def opened
+      def post_init
         raise "Unimplemented"
       end
 
-      def writeHeartbeat
-        raise "Unimplemented"
+      def write_heartbeat
+        Orbited.logger.info "
+          Call to unimplemented method write_heartbeat on #{inspect}
+          Not neccessarily an error. Heartbeat does not always make sense.
+        "
       end
     end
   end

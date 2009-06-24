@@ -10,41 +10,32 @@ module Orbited
       HTML
       
       InitialData = ([0, 256 - initial_data.size].max * ' ') + "\n"
-      Pragma = 'no-cache'
-      Expires = -1
-      
-      def opened
-        logger.debug('opened!')
-        # Force reconnect ever 30 seconds
-        @total_bytes = 0
-#        @close_timer = reactor.callLater(5, self.triggerCloseTimeout)
-        # See "How to prevent caching in Internet Explorer"
-        #     at http://support.microsoft.com/kb/234067
-        request.headers['cache-control'] = CacheControl
-        request.headers['pragma'] = Pragma
-        request.headers['expires'] = Expires
-        logger.debug('send initialData ', InitialData)
-        request.write(InitialData)
 
-      def trigger_close_timeout
-        close
+      
+      def post_init
+        Orbited.logger.debug('opened!')
+        @total_bytes = 0
+#        @close_timer = EM.add_timer(30) { close_connection_after_writing }
+
+        Orbited.logger.debug('send initialData ', InitialData)
+        send_data(InitialData)
       end
 
       def write(packets)
         # TODO make some JS code to remove the script elements from DOM
         #      after they are executed.
-        payload = "<script>e(#{json.encode(packets)});</script>"
-        logger.debug('write ', payload)
-        request.write(payload)
-        @total_bytes += len(payload)
+        payload = "<script>e(#{JSON.encode(packets)});</script>"
+        Orbited.logger.debug('write ', payload)
+        send_data(payload)
+        @total_bytes += payload.size
         if @total_bytes > MAXBYTES
-          logger.debug('write closing because session MAXBYTES was exceeded')
-          close
+          Orbited.logger.debug('write closing because session MAXBYTES was exceeded')
+          close_connection_after_writing
         end
       end
 
       def writeHeartbeat
-        logger.debug('writeHeartbeat')
+        Orbited.logger.debug('writeHeartbeat')
         request.write('<script>h;</script>')
       end
     end

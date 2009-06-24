@@ -1,37 +1,32 @@
 module Orbited
   module Transport
     class XHRStreaming < Abstract
-      ContentType = 'application/x-orbited-event-stream'
-      
-      def opened
-        @total_bytes = 0
-        request.headers['content-type'] = ContentType
-        # Safari/Tiger may need 256 bytes
-        request.write(' ' * 256)
-      end
 
-      def trigger_close_timeout
-        logger.debug('trigger_close_timeout called')
-        close
+      def post_init
+        @total_bytes = 0
+        # Safari/Tiger may need 256 bytes
+        send_data(' ' * 256)
       end
 
       def write(packets)
-        logger.debug('write %r' % packets)
         # TODO why join the packets here?  why not do N request.write?
+        Orbited.logger.debug("writing packets #{packets}")
         payload = encode(packets)
-        logger.debug('WRITE ' + payload)
-        request.write(payload)
+        Orbited.logger.debug("writing payload #{payload}")
+        
+        send_data(payload)
         @total_bytes += payload.size
         if @total_bytes > MaxBytes
-          logger.debug('over maxbytes limit')
-          close
+          Orbited.logger.debug('over maxbytes limit')
+          close_connection_after_writing
         end
       end
 
       def write_heartbeat
-        logger.debug("writeHeartbeat #{inspect}")
-        request.write('x')
+        Orbited.logger.debug("write_heartbeat #{inspect}")
+        send_data 'x'
       end
+      
     end
   end
 end

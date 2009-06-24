@@ -1,0 +1,19 @@
+HtmlFile:
+  # See "How to prevent caching in Internet Explorer"
+  #  at http://support.microsoft.com/kb/234067
+  Cache-Control: no-cache, must-revalidate
+  Pragma: no-cache
+  Expires: -1
+
+LongPolling:
+  Cache-Control: no-cache, must-revalidate
+
+Polling:
+  Cache-Control: no-cache, must-revalidate
+  
+SSE:
+  Cache-Control: no-cache, must-revalidate
+  Content-Type: application/x-dom-event-stream
+  
+XHRStreaming:
+  Content-Type: application/x-orbited-event-stream

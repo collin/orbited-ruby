@@ -13,5 +13,11 @@ module Orbited
       return unless klass
       klass.new connection
     end
+    
+    def self.headers
+      return @headers if @headers
+      data = Orbited.root/'transport/headers.yaml').read
+      @headers = YAML.load data
+    end
   end
 end

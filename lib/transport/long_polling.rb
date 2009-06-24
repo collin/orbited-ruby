@@ -2,14 +2,11 @@ module Orbited
   module Transport
     class LongPolling < Abstract
     
-      def opened
-        # Force reconnect ever 45 seconds
-        @close_timer = reactor.callLater(30) { trigger_close_timeout }
-        request.headers['cache-control'] = CacheControl
-      end
-
-      def trigger_close_timeout
-        close
+      # Force reconnect ever 30 seconds
+      # close_connection_after_writing may take a long time
+      # This may cause subtle errors?
+      def post_init
+        @cancel_timer = EM.add_timer(30) { close_connection_after_writing }
       end
 
       def write(packets)
@@ -17,17 +14,16 @@ module Orbited
         #       single packet, and its a ping, just don't send it. (instead,
         #       close the connection. the re-open will prompt the ack)
         
-        logger.debug('write %r' % packets)
+        @cancel_timer.cancel
+        
+        Orbited.logger.debug("writing packets #{packets}")
         payload = encode(packets)
-        logger.debug('WRITE ' + payload)        
-        request.write(payload)
-        close
+        Orbited.logger.debug("writing payload #{payload}")        
+        
+        send_data(payload)
+        close_connection_after_writing
       end
 
-      def writeHeartbeat
-        # NOTE no heartbeats...
-#        pass
-      end
     end
   end
 end
