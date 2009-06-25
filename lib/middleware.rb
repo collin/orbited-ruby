@@ -3,7 +3,9 @@ module Orbited
     def self.included klass
       klass.instance_eval do
         use Rack::Static, :urls => ['/static'], Orbited.root
-        use Orbited
+        map '/tcp' do
+          use Orbited::Session::TcpResource
+        end
       end
     end
   end

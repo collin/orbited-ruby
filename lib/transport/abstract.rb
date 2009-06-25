@@ -17,32 +17,37 @@ module Orbited
         @renderer = DeferrableBody.new
         @open = false
         @closed = false
+        render
       end
 
       def render(request)
         @open = true
         @packets = []
-        @request = request
-        opened
+        @tcp_connection.transport_opened self
         reset_heartbeat
+        merge_default_headers
         [200, headers, @renderer]
       end
 
       def reset_heartbeat
-        @heartbeat_timer = EM::Timer.new HeartbeatInterval, &method(:do_heartbeat)
+        @heartbeat_timer = EM::Timer.new(HeartbeatInterval) &method(:do_heartbeat)
+      end
+  
+      def send_data *data
+        @renderer.call data.flatten
       end
   
       def do_heartbeat
         if closed?
-          
+          Orbited.logger.debug("heartbeat called - already closed", inspect)
         else
           write_heartbeat
           reset_heartbeat
         end
       end
 
-      def send_packet(*packet)\
-        @packets << packet
+      def send_packet(*packet)
+        @packets << packet.flatten
       end
 
       def flush
@@ -52,7 +57,7 @@ module Orbited
         reset_heartbeat
       end
 
-      def unbind
+      def close
         Orbited.logger.debug('unbind called')
 
         if closed?
@@ -63,13 +68,6 @@ module Orbited
         @closed = true
         heartbeat_timer.cancel
         @open = false
-        
-        if request
-          Orbited.logger.debug('calling finish', inspect)
-          request.finish
-        end
-        
-        @request = nil
       end
 
       def encode(packets)

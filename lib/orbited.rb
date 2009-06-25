@@ -11,7 +11,8 @@ require 'moneta/memory'
 Pathname.send :alias_method, :/, :+
 
 module Orbited
-  
+  NotFound = [404, {}, []].freeze
+
   def self.logger
     return @logger if @logger
     @logger       = Logger.new STDOUT

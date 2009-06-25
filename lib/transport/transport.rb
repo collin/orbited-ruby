@@ -10,7 +10,7 @@ module Orbited
     
     def self.create transport_name, connection
       klass = Map[transport_name]
-      return unless klass
+      return NotFound unless klass
       klass.new connection
     end
     

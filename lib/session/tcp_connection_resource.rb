@@ -1,8 +1,8 @@
 module Orbited
   module Session
     class TCPConnectionResource
-      PingTimeout = 30
-      PingInterval = 30
+      PingTimeout   = 30
+      PingInterval  = 30
       AsyncResponse = [-1, {}, []].freeze
       AsyncCallback = "async.callback".freeze
 
@@ -17,10 +17,9 @@ module Orbited
         @transport = nil
         @comet_transport = nil
         @parent_transport = nil
-        @options = {}
         @msg_queue = []
-        @unack_queue = []
-        @last_ack_id = 0
+        @unacknowledge_queue = []
+        @last_acknowledge_id = 0
         @packet_id = 0
         @ping_timer = nil
         @timeout_timer = nil
@@ -33,11 +32,6 @@ module Orbited
       end
 
       alias write send
-
-      # this is never used, right?
-      def write_sequence(data)
-        data.each{|datum| write datam }
-      end
 
       def lose_connection
         # TODO self.close ?
@@ -54,29 +48,27 @@ module Orbited
         end
       end
 
-      def get_child(path, request)
-        if Transport::Map.contain? path
-          return Transport.create(path, self)
-        else
-          raise NoResource("No such child resource.")
-        end
+      def handle_get(request, transport_name)
+        @request = request
+        Transport.create(transport_name, self)
       end
 
-      def call(env)
-        @request = Rack::Request.new env
+      def handle_post(request) 
+        @request = request
+        EM.next_tick { parse_data @request.body.read }
+        AsyncResponse
+      end
+      
+      def render
         Orbited.logger.debug("render request=#{request}");
-        stream = request.body.read
         
-        ack(@request.params['ack'].to_i) if @request.params['ack']
+        acknowledge
         
         encoding = request.headers['tcp-encoding']
         # TODO instead of .write/.finish just return OK?
         request.write('OK')
         request.finish
         reset_ping_timer
-        # TODO why not call parse_data here?
-        reactor.callLater(0, parse_data, stream)
-        AsyncResponse
       end
 
       def parse_data(data)
@@ -152,13 +144,13 @@ module Orbited
           @comet_transport.close
           @comet_transport = nil
         end
-        Orbited.logger.debug("new transport " + repr(transport))
+        Orbited.logger.debug("new transport #{transport.inspect}")
         @comet_transport = transport
-        transport.CONNECTION = self
-        transport.onClose.addCallback(@transport_closed)
+#        transport.CONNECTION = self
+        transport.after :close { transport_closed transport }
         
-        ack(@request.params['ack'].to_i) if @request.params['ack']
-        resend_unack_queue
+        acknowledge
+        resend_unacknowledge_queue
         send_msg_queue
         unless @open
           @open = true
@@ -225,15 +217,17 @@ module Orbited
         end
       end
 
-      def ack(ack_id)
-        Orbited.logger.debug("ack ack_id=#{ack_id}")
-        ack_id = [ack_id, @packet_id].min
-        return if ack_id <= @last_ack_id
-        (ack_id - @last_ack_id).times do
-          data, packet_id = @unack_queue.pop
-          close("close acked", true) if data.is_a?(TCPClose)
+      def acknowledge
+        return unless @request && @request.params['acknowledge']
+        acknowledge(@request.params['acknowledge'].to_i) 
+        Orbited.logger.debug("acknowledge acknowledge_id=#{acknowledge_id}")
+        acknowledge_id = [acknowledge_id, @packet_id].min
+        return if acknowledge_id <= @last_acknowledge_id
+        (acknowledge_id - @last_acknowledge_id).times do
+          data, packet_id = @unacknowledge_queue.pop
+          close("close acknowledgeed", true) if data.is_a?(TCPClose)
         end
-        @last_ack_id = ack_id
+        @last_acknowledge_id = acknowledge_id
       end
 
       def send_msg_queue
@@ -248,7 +242,7 @@ module Orbited
         else
           @packet_id += 1
           _send(data, @packet_id)
-          @unack_queue.append([data, @packet_id])
+          @unacknowledge_queue.append([data, @packet_id])
           if flush
             @comet_transport.flush
           end
@@ -257,7 +251,7 @@ module Orbited
 
       def _send(data, packet_id="")
         Orbited.logger.debug("_send data=#{data} packet_id=#{packet_id}")
-        if data.is_a? TCPPing
+        if data == TCPPing
           @comet_transport.send_packet('ping', packet_id.to_s)
         elsif data.is_a? TCPClose
           @comet_transport.send_packet('close', packet_id.to_s, data.reason)
@@ -268,12 +262,12 @@ module Orbited
         end
       end
 
-      def resend_unack_queue
-        return unless @unack_queue.any?
+      def resend_unacknowledge_queue
+        return unless @unacknowledge_queue.any?
 
-        @unack_queue.each{|atom| _send atom.first, atom.last }
+        @unacknowledge_queue.each{|atom| _send atom.first, atom.last }
         
-        ack_id = @last_ack_id + @unack_queue.size
+        acknowledge_id = @last_acknowledge_id + @unacknowledge_queue.size
       end
     end
   end
