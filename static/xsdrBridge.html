@@ -1,0 +1,203 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+ <head>
+     <title>bridge</title> 
+     <script src="JSON.js"></script>
+
+<script>
+
+var origDomain = document.domain
+var topDomain = null;
+var id = parseInt(location.hash.slice(1));
+//var id = location.hash
+var parts = document.domain.split('.')
+var req = null;
+var isOpera = !!window.opera
+
+// Posts a message in JSON string format to the parent document, issuing the request
+function postMessageToParent(msg)
+{
+        var target = parent.postMessage ? parent : (parent.document.postMessage ? parent.document : undefined);
+        if (typeof target != "undefined") {
+            target.postMessage(msg, "*");
+        }
+};
+
+function push(data) {
+
+    if (isOpera) {
+        postMessageToParent("event " + id + " " + JSON.stringify(data));
+    }
+    else {
+        document.domain = topDomain
+        parent.Orbited.singleton.XSDR.receiveCbs[id](data)
+        try {
+            document.domain = origDomain;
+        }
+        catch(e) {
+        }
+    }        
+}
+logger = null;
+function debug() {
+    if (isOpera) {
+        return
+    }
+    document.domain = topDomain
+    logger.debug.apply(logger, arguments)
+    try {
+        document.domain = origDomain;
+    }
+    catch(e) {
+    }
+}
+if (!isOpera) {
+    if (parts.length == 1) {
+        try {
+            document.domain = document.domain
+            logger = parent.Orbited.singleton.XSDRBridgeLogger
+            topDomain = document.domain
+        }
+        catch(e) {
+        }
+    }
+    else {
+        for (var i = 0; i < parts.length-1; ++i) {
+            document.domain = parts.slice(i).join(".")
+            try {
+                logger = parent.Orbited.singleton.XSDRBridgeLogger
+                topDomain = document.domain
+                break;
+            }
+            catch(e) {
+    //            alert(e.name + ': ' + e.message)
+            }
+        }
+    }
+if (topDomain == null)
+    throw new Error("Cross-Subdomain Error. See: http://orbited.org/wiki/Deployment#Cross-SubdomainDeployment")
+}
+push(['initialized'])
+try {
+    document.domain = origDomain
+}
+catch(e) {
+}
+
+
+function getNext() {
+//    alert(
+//    debug('GETTING NEXT REQUEST', '...');
+//    alert('getting next request...')
+    if (! parent.Orbited) {
+        return;
+    }
+    document.domain = topDomain
+    var queue = parent.Orbited.singleton.XSDR.queues[id]
+//    alert('queue: ' + queue.length)
+    var data = null
+    if (queue.length > 0)
+        data = queue.shift();
+    try {
+        document.domain = origDomain;
+    }
+    catch(e) {
+    }
+    return data
+}
+
+// Sends a message to the parent, requesting it to send the next request on
+// the queue. The result is handled in the message receiver handler
+function sendGetNext() {
+    postMessageToParent("queues " + id);
+}
+
+function checkAbort() {
+    if (isOpera)    
+        return
+}
+
+function doNextRequest() {
+    if (isOpera)
+        sendGetNext()
+    else
+        req = getNext();
+
+    if (req == null) {
+        return setTimeout(doNextRequest, 20);
+    }
+    var smethod = req[0]
+    var surl = req[1]
+    var spayload = req[2];
+    var sheaders = req[3];
+
+    var xhr = createXHR();
+    var responseIndex = 0;
+    xhr.onreadystatechange = function() {
+        // NOTE: after an abort, a readystatechange will cause an error...
+        // TOOD: to aborts by pushing 'ABORT' instead of ifr.src= null from the
+        //       parent (Orbited.XSDR.abort)
+        try {
+;;;         debug('onreadystatechange', xhr.readyState);
+            var payload = {
+                readyState: xhr.readyState
+            }
+            try {
+                payload['status'] = xhr.status
+            }
+            catch(e) {           
+            }
+            try {
+                var data = xhr.responseText.slice(responseIndex)
+                responseIndex = xhr.responseText.length;
+                payload['responseText'] = data;
+            }
+            catch(e) {
+            }
+;;;         debug('pushing payload', payload);
+            push(["readystatechange", payload])
+    
+            if (xhr.readyState == 4) {
+                req = null;
+                return doNextRequest();
+            }
+        }
+    catch(e) {
+    }
+    }
+    xhr.open(smethod, surl, true)
+    for (key in sheaders) {
+        xhr.setRequestHeader(key, sheaders[key])
+    }
+    xhr.send(spayload);
+}
+
+// TODO DRY this is also in BaseTCPConnection.js
+var createXHR = function() {
+    try { return new XMLHttpRequest(); } catch(e) {}
+    try { return new ActiveXObject('MSXML3.XMLHTTP'); } catch(e) {}
+    try { return new ActiveXObject('MSXML2.XMLHTTP.3.0'); } catch(e) {}
+    try { return new ActiveXObject('Msxml2.XMLHTTP'); } catch(e) {}
+    try { return new ActiveXObject('Microsoft.XMLHTTP'); } catch(e) {}
+    return null;
+};
+
+
+if (isOpera) {
+    // Message receiver handler (req. for Opera compatibility)
+    (window.postMessage && window || document).addEventListener('message', function(e) {
+        var msg = e.data;
+        var response = JSON.parse(msg);
+        req = response;
+    }
+    , false
+    );  
+}
+
+
+</script>
+</head>
+<body onload="doNextRequest()">
+ <h1>Sub Domain</h1>
+</body>
+</html>

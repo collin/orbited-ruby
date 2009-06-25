@@ -1,0 +1,184 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+    <head>
+        <title>TCPSocket unit tests</title>
+        <link rel='stylesheet' href='tests.css'>
+        <script>document.domain=document.domain;</script>
+        <script type="text/javascript" src="/static/tests/lib/doh/doh.js" djConfig="isDebug:true"></script>
+        <script src="/static/Orbited.js"></script>
+        <script type="text/javascript">
+            if (document.domain == "xp.orbited") {
+                Orbited.settings.port = 5000;
+                document.title += ": X-Port";
+            }
+            else if (Orbited.settings.hostname == "www.orbited") {
+                Orbited.settings.hostname = "sub.www.orbited";
+                document.title += ": X-Subdomain";
+            }
+            else {
+                document.title += ": Same Domain";
+            }
+            if (location.hash != "") {
+                Orbited.util.chooseTransport = function() {
+                    return Orbited.CometTransports[location.hash.slice(1)];
+                }
+            }
+            testlog = Orbited.getLogger('tests')
+            testlog.enabled = true;
+
+            dojo.require("doh.runner");
+
+            TCPSocket = Orbited.TCPSocket;
+
+            dojo.addOnLoad(function() {
+                function setUpSocket(t) {
+                    t._socket = new TCPSocket();
+                }
+                function tearDownSocket(t) {
+                    try {
+                        var socket = t._socket;
+                        var readyState = socket.readyState;
+                        if (readyState != socket.READY_STATE_CLOSED && readyState != socket.READY_STATE_INITIALIZED)
+                            testlog.warn("going to reset a non closed socket with readyState=", t._socket.readyState);
+                        socket.onerror = function() {};
+                        socket.onclose = function() {};
+                        socket.reset();
+                    } catch (e) {
+                        testlog.error("unable to reset socket (further tests might be fubar because of this): ", e);
+                    }
+                }
+
+                function runEchoTest(t, text, binary) {
+                    var endDeferred = new doh.Deferred();
+                    var success = false;
+                    var buffer = "";
+                    var socket = t._socket;
+
+                    socket.onopen = function() {
+                        socket.send(text);
+                    };
+                    socket.onread = function(data) {
+                        buffer += data;
+                        testlog.info("buffer contains: ", buffer, 'text is', text);
+                        if (buffer == text) {
+                            success = true;
+                            socket.close();
+                        }
+                    };
+                    socket.onclose = function() {
+                        if (success)
+                            endDeferred.callback(true);
+                        else
+                            endDeferred.errback(new Error("socket closed before receiving message"));
+                    };
+                    socket.onerror = function(error) {
+                        endDeferred.errback(error);
+                    };
+
+                    socket.open("localhost", 8001, binary);
+
+                    return endDeferred;
+                }
+
+                // set maximum amount of time that a single unit test
+                // can use.  we set this to 10 seconds.
+                var testTimeout = 10000;
+
+                doh.register("TCPSocketTests",
+                    [
+                        {
+                            name: "Baseline",
+                            timeout: testTimeout,
+                            setUp: setUpSocket,
+                            tearDown: tearDownSocket,
+                            runTest: function(t) {
+                                var text = "hello, world";
+                                return runEchoTest(t, text);
+                            }
+                        },
+
+                        {
+                            name: "unauthorizedDestination",
+                            timeout: testTimeout,
+                            setUp: setUpSocket,
+                            tearDown: tearDownSocket,
+                            runTest: function(t) {
+                                var endDeferred = new doh.Deferred();
+                                var onopenCalled = false;
+                                var socket = t._socket;
+
+                                socket.onopen = function() {
+                                    onopenCalled = true;
+                                    socket.close();
+                                };
+                                socket.onread = function(data) {
+                                };
+                                socket.onclose = function() {
+                                    if (onopenCalled)
+                                        endDeferred.errback(new Error("expected closed socket, but got open socket"));
+                                    else
+                                        endDeferred.callback(true);                                        
+                                };
+                                socket.onerror = function(error) {
+                                    endDeferred.errback(error);
+                                };
+
+                                socket.open("localhost", 0);
+
+                                return endDeferred;
+                            }
+                        },
+
+                        {
+                            name: "openCloseSocket",
+                            timeout: testTimeout,
+                            setUp: setUpSocket,
+                            tearDown: tearDownSocket,
+                            runTest: function(t) {
+                                // NB: This in intentionally empty.
+                            }
+                        },
+
+                        {
+                            name: "binary",
+                            timeout: testTimeout,
+                            setUp: setUpSocket,
+                            tearDown: tearDownSocket,
+                            runTest: function(t) {
+                                var bytes = "\x01\x02\x03\x04";
+                                return runEchoTest(t, bytes, true);
+                            }
+                        },
+
+                        {
+                            name: "binaryWithTrailingNul",
+                            timeout: testTimeout,
+                            setUp: setUpSocket,
+                            tearDown: tearDownSocket,
+                            runTest: function(t) {
+                                var bytes = "\0\0";
+                                return runEchoTest(t, bytes, true);
+                            }
+                        }
+                    ]
+                );
+
+                doh.run();
+            })
+        </script>
+    </head>
+    <body>
+        <div class="block">
+            <a href="index.html">back to Tests Main</a>
+            <div class="blockTopic">
+                TCPSocket Automated Tests
+            </div>
+            <div class="blockBody">
+                When testing, always use orbited-debug.cfg.
+            </div>
+            <div class="blockBody">
+                NB: if you're running Firefox with Firebug, look at its console.
+            </div>
+        </div>
+    </body>
+</html>

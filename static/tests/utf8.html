@@ -1,0 +1,255 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+    <head>
+        <!--
+            NB: this is iso-8859-1 to make sure we catch the browsers that do not
+                properly encode to UTF-8 when we use encode/decodeURIComponent
+        -->
+        <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+        <title>Timing different UTF-8 implementations</title>
+        <link rel='stylesheet' href='tests.css'>
+        <script type="text/javascript" src="/static/tests/lib/doh/doh.js" djConfig="isDebug:true"></script>
+        <script src="/static/Orbited.js"></script>
+        <script type="text/javascript">
+            dojo.require("doh.runner");
+
+            // See "UTF-8, a transformation format of ISO 10646" at http://tools.ietf.org/html/rfc3629
+
+            function generate(set, amount) {
+                var result = "";
+                for (var n = 0; n < amount; ++n) {
+                    result += set[n % set.length];
+                }
+                return result;
+            }
+            var asciiSet = ""; for (var n = 32; n < 128; ++n) { asciiSet += String.fromCharCode(n); };
+            function generateAscii(amount) { return generate(asciiSet, amount); }
+
+            var fixtures = {
+                // [encoded, decoded]
+                us: ['hello world', 'hello world'],
+                pt: ['olá mundo', 'ol\u00e1 mundo'],
+                //rfc3629_a: ['\x41\xE2\x89\xA2\xCE\x91\x2E', '\u0041\u2262\u0391\u002E\u?????'],
+                rfc3629_b: ['\xED\x95\x9C\xEA\xB5\xAD\xEC\x96\xB4', '\uD55C\uAD6D\uC5B4'],
+                rfc3629_c: ['\xE6\x97\xA5\xE6\x9C\xAC\xE8\xAA\x9E', '\u65E5\u672C\u8A9E']
+            };
+
+
+            ////
+            // Orbited 0.6 (as of revision 522).
+            function orbited_0_6_encode(text) {
+                var ret = [];
+                
+                function pad(str, len) {
+                    while(str.length < len) { str = "0" + str; } return str;
+                }
+                var e = String.fromCharCode
+                for (var i=0; i < text.length; i++) {
+                    var chr = text.charCodeAt(i);
+                    if (chr <= 0x7F) {
+                        ret.push(e(chr));
+                    } else if(chr <= 0x7FF) {
+                        var binary = pad(chr.toString(2), 11);
+                        ret.push(e(parseInt("110"   + binary.substr(0,5), 2)));
+                        ret.push(e(parseInt("10"    + binary.substr(5,6), 2)));
+                    } else if(chr <= 0xFFFF) {
+                        var binary = pad(chr.toString(2), 16);
+                        ret.push(e(parseInt("1110"  + binary.substr(0,4), 2)));
+                        ret.push(e(parseInt("10"    + binary.substr(4,6), 2)));
+                        ret.push(e(parseInt("10"    + binary.substr(10,6), 2)));
+                    } else if(chr <= 0x10FFFF) {
+                        var binary = pad(chr.toString(2), 21);
+                        ret.push(e(parseInt("11110" + binary.substr(0,3), 2)));
+                        ret.push(e(parseInt("10"    + binary.substr(3,6), 2)));
+                        ret.push(e(parseInt("10"    + binary.substr(9,6), 2)));
+                        ret.push(e(parseInt("10"    + binary.substr(15,6), 2)));
+                    }
+                }
+                return ret.join("");
+            }
+            function orbited_0_6_decode(s) {    
+                var ret = [];
+                var j = 0
+                function pad6(str) {
+                    while(str.length < 6) { str = "0" + str; } return str;
+                }
+                for (var i=0; i < s.length; i++) {
+                    if ((s.charCodeAt(i) & 0xf8) == 0xf0) {
+                        if (s.length -j < 4) { break }
+                        j+=4;
+                        ret.push(String.fromCharCode(parseInt(
+                                     (s.charCodeAt(i) & 0x07).toString(2) +
+                              pad6((s.charCodeAt(i+1) & 0x3f).toString(2)) +
+                              pad6((s.charCodeAt(i+2) & 0x3f).toString(2)) +
+                              pad6((s.charCodeAt(i+3) & 0x3f).toString(2))
+                            , 2)));
+                        i += 3;
+                    } else if ((s.charCodeAt(i) & 0xf0) == 0xe0) {
+                        if (s.length -j < 3) { break }
+                        j+=3;
+                        ret.push(String.fromCharCode(parseInt(
+                              (s.charCodeAt(i) & 0x0f).toString(2) +
+                              pad6((s.charCodeAt(i+1) & 0x3f).toString(2)) +
+                              pad6((s.charCodeAt(i+2) & 0x3f).toString(2))
+                            , 2)));
+                        i += 2;
+                    } else if ((s.charCodeAt(i) & 0xe0) == 0xc0) {
+                        j+=2
+                        if (s.length -j < 2) { break }
+                            ret.push(String.fromCharCode(parseInt(
+                                   (s.charCodeAt(i) & 0x1f).toString(2) +
+                            pad6((s.charCodeAt(i+1) & 0x3f).toString(2), 6)
+                            , 2)));
+                        i += 1;
+                    } else {
+                        j+=1
+                        ret.push(String.fromCharCode(s.charCodeAt(i)));
+                    }
+                }
+                return [ret.join(""), j];
+            }
+
+
+            ////
+            // Browser.
+            // See http://ecmanaut.blogspot.com/2006/07/encoding-decoding-utf8-in-javascript.html
+            // See http://developer.mozilla.org/en/docs/Core_JavaScript_1.5_Reference:Global_Functions:encodeURIComponent
+            function browser_encode(s) {
+                return unescape(encodeURIComponent(s));
+            }
+            function browser_decode(s) {
+                return decodeURIComponent(escape(s));
+            }
+
+            var implementations = {
+                orbited: [Orbited.utf8.encode, function(s) { return Orbited.utf8.decode(s)[0]; }],
+                orbited_0_6: [orbited_0_6_encode, function(s) { return orbited_0_6_decode(s)[0]; }],
+                browser: [browser_encode, browser_decode]
+            };
+
+            function timeEncode(t, name, implementations, fixtures, numberSamples, numberIterationsPerSample) {
+                for (var key in implementations) {
+                    var encode = implementations[key][0];
+                    var samples = [];
+                    for (var i = 0; i < numberSamples; ++i) {
+                        var start = new Date();
+                        for (var j = 0; j < numberIterationsPerSample; ++j) {
+                            for (var k in fixtures) {
+                                var encoded = key + ':' + fixtures[k][0];
+                                var decoded = key + ':' + fixtures[k][1];
+                                t.is(encoded, encode(decoded));
+                            }
+                        }
+                        samples.push((new Date()) - start);
+                    }
+                    console.info(name + ": encoding using " + key + " took " + samples.sort()[0] + " [ms]");
+                }
+            }
+
+            function timeDecode(t, name, implementations, fixtures, numberSamples, numberIterationsPerSample) {
+                for (var key in implementations) {
+                    var decode = implementations[key][1];
+                    var samples = [];
+                    for (var i = 0; i < numberSamples; ++i) {
+                        var start = new Date();
+                        for (var j = 0; j < numberIterationsPerSample; ++j) {
+                            for (var k in fixtures) {
+                                var encoded = key + ':' + fixtures[k][0];
+                                var decoded = key + ':' + fixtures[k][1];
+                                t.is(decoded, decode(encoded));
+                            }
+                        }
+                        samples.push((new Date()) - start);
+                    }
+                    console.info(name + ": decoding using " + key + " took " + samples.sort()[0] + " [ms]");
+                }
+            }
+
+            dojo.addOnLoad(function() {
+                doh.register("utf8",
+                    [
+                        {
+                            name: "conformanceEncode",
+                            runTest: function(t) {
+                                for (var key in implementations) {
+                                    var encode = implementations[key][0];
+
+                                    for (var k in fixtures) {
+                                        var encoded = key + ':' + fixtures[k][0];
+                                        var decoded = key + ':' + fixtures[k][1];
+
+                                        t.is(encoded, encode(decoded));
+                                    }
+                                }
+                            }
+                        },
+
+                        {
+                            name: "conformanceDecode",
+                            runTest: function(t) {
+                                for (var key in implementations) {
+                                    var decode = implementations[key][1];
+
+                                    for (var k in fixtures) {
+                                        var encoded = key + ':' + fixtures[k][0];
+                                        var decoded = key + ':' + fixtures[k][1];
+
+                                        t.is(decoded, decode(encoded));
+                                    }
+                                }
+                            }
+                        },
+
+                        {
+                            name: "timeEncode",
+                            runTest: function(t) {
+                                timeEncode(t, "timeEncode", implementations, fixtures, 5, 100);
+                            }
+                        },
+
+                        {
+                            name: "timeDecode",
+                            runTest: function(t) {
+                                timeDecode(t, "timeDecode", implementations, fixtures, 5, 100);
+                            }
+                        },
+
+                        {
+                            name: "time500Bytes",
+                            runTest: function(t) {
+                                var fixtures = [[generateAscii(500), generateAscii(500)]];
+                                timeEncode(t, "time500Bytes", implementations, fixtures, 3, 30);
+                                timeDecode(t, "time500Bytes", implementations, fixtures, 3, 30);
+                            }
+                        },
+
+                        {
+                            name: "time1000Bytes",
+                            runTest: function(t) {
+                                var fixtures = [[generateAscii(1000), generateAscii(1000)]];
+                                timeEncode(t, "time1000Bytes", implementations, fixtures, 3, 30);
+                                timeDecode(t, "time1000Bytes", implementations, fixtures, 3, 30);
+                            }
+                        }
+                    ]
+                );
+
+                doh.run();
+            })
+        </script>
+    </head>
+    <body>
+        <div class="block">
+            <a href="index.html">back to Tests Main</a>
+            <div class="blockTopic">
+                UTF8 Tests
+            </div>
+            <div class="blockBody">
+                When testing, always use orbited-debug.cfg.
+            </div>
+            <div class="blockBody">
+                NB: if you're running Firefox with Firebug, look at its console.
+            </div>
+        </div>
+    </body>
+</html>

@@ -3,7 +3,7 @@ module Orbited
     class TCPConnectionResource
       ping_timeout = 30
       ping_interval = 30
-      logger = logging.get_logger('orbited.cometsession.TCPConnectionResource')
+      Orbited.logger = logging.get_Orbited.logger('orbited.cometsession.TCPConnectionResource')
 
       attr_reader :peer, :host
 
@@ -46,9 +46,9 @@ module Orbited
       end
 
       def connection_lost
-        logger.debug('connectionLost... already triggered?', @lost_triggered)
-        unlss @lost_triggered
-          logger.debug('do trigger');
+        Orbited.logger.debug('connectionLost... already triggered?', @lost_triggered)
+        unless @lost_triggered
+          Orbited.logger.debug('do trigger');
           @lost_triggered = true
           @parent_transport.connection_lost
         end
@@ -62,9 +62,9 @@ module Orbited
       end
 
       def render(request)
-        logger.debug('render request=%r' % request);
+        Orbited.logger.debug('render request=%r' % request);
         stream = request.body.read
-        logger.debug('render request.content=%r' % stream);
+        Orbited.logger.debug('render request.content=%r' % stream);
         
         ack(transport.request.params['ack'].to_i) if ack
         
@@ -82,11 +82,11 @@ module Orbited
         # TODO this method is filled with areas that really should be put
         #       inside try/except blocks. We don't want errors caused by
         #       malicious IO.
-        logger.debug('RECV ' + data)
+        Orbited.logger.debug('RECV ' + data)
         frames = []
         current_frame  = []
         while data
-          logger.debug([data, frames, current_frame])
+          Orbited.logger.debug([data, frames, current_frame])
           is_last = data[0] == '0'
           l, data = data[1].split(',', 2)
           l = int(l)
@@ -107,7 +107,7 @@ module Orbited
         #       ignore if its not what we expect.
         #       -- rgl
         for args in frames
-          logger.debug('parse_data frame=%r' % args);
+          Orbited.logger.debug('parse_data frame=%r' % args);
           id = args[0]
           name = args[1]
           if name == 'close'
@@ -134,7 +134,7 @@ module Orbited
             end
             # TODO do we have to do anything? I don't think so...
             #       -mcarter 7-30-08
-            logger.debug('parse_data PING? PONG!');
+            Orbited.logger.debug('parse_data PING? PONG!');
           end
         end
       end
@@ -151,7 +151,7 @@ module Orbited
           @comet_transport.close
           @comet_transport = nil
         end
-        logger.debug("new transport " + repr(transport))
+        Orbited.logger.debug("new transport " + repr(transport))
         @comet_transport = transport
         transport.CONNECTION = self
         transport.onClose.addCallback(@transport_closed)
@@ -161,7 +161,7 @@ module Orbited
         send_msg_queue
         unless @open
           @open = true
-          @comet_transport.sendPacket("open", @packet_id)
+          @comet_transport.send_packet("open", @packet_id)
         end
         @comet_transport.flush
       end
@@ -210,11 +210,11 @@ module Orbited
 
       def close(reason="", now=false)
         if @closed
-          logger.debug('close called - already closed')
+          Orbited.logger.debug('close called - already closed')
           return
         end
         @closing = true
-        logger.debug('close reason=%s %s' % (reason, repr))
+        Orbited.logger.debug('close reason=%s %s' % (reason, repr))
         send(TCPClose(reason))
         if now
           hardClose
@@ -225,7 +225,7 @@ module Orbited
       end
 
       def ack(ack_id)
-        logger.debug("ack ack_id=#{ack_id}")
+        Orbited.logger.debug("ack ack_id=#{ack_id}")
         ack_id = [ack_id, @packet_id].min
         return if ack_id <= @last_ack_id
         (ack_id - @last_ack_id).times do
@@ -255,15 +255,15 @@ module Orbited
       end
 
       def _send(data, packet_id="")
-        logger.debug("_send data=#{data} packet_id=#{packet_id}")
+        Orbited.logger.debug("_send data=#{data} packet_id=#{packet_id}")
         if data.is_a? TCPPing
-          @comet_transport.sendPacket('ping', packet_id.to_s)
+          @comet_transport.send_packet('ping', packet_id.to_s)
         elsif data.is_a? TCPClose
-          @comet_transport.sendPacket('close', packet_id.to_s, data.reason)
+          @comet_transport.send_packet('close', packet_id.to_s, data.reason)
         elsif data.is_a? TCPOption
-          @comet_transport.sendPacket('opt', packet_id.to_s, data.payload)
+          @comet_transport.send_packet('opt', packet_id.to_s, data.payload)
         else
-          @comet_transport.sendPacket('data', packet_id.to_s, Base64.b64encode(data))
+          @comet_transport.send_packet('data', packet_id.to_s, Base64.b64encode(data))
         end
       end
 

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <title>Orbited Tests</title>
+  <link rel='stylesheet' href='tests.css'>
+ </head>
+ <body>
+  <h1>Orbited Tests</h1>
+  <div class="block">
+   <div class="blockTopic">
+    What
+   </div>
+   <div class="blockBody">
+    Here are some tests for Orbited. The first rule of Orbited is never commit anything that breaks these tests. The second rule of Orbited is never commit anything that breaks these tests. If you think Orbited is broken, try to reproduce your problem with these tests. If there's some case that these tests don't cover, tell us and we'll make a new test set.
+   </div>
+  </div>
+  <div class="block">
+   <div class="blockTopic">
+    How
+   </div>
+   <div class="blockBody">
+    Always use orbited-debug.cfg. If there's a test case that orbited-debug.cfg doesn't support, tell us and we'll fix it.
+   </div>
+   <div class="blockBody">
+    Open up your hosts file:
+     <ul class="blockList">
+      <li>
+       Linux - /etc/hosts
+      </li>
+      <li>
+       Windows - %SystemRoot%\system32\drivers\etc\hosts
+      </li>
+      <li>
+       Mac OSX - /private/etc/hosts
+      </li>
+     </ul>
+    Modify your hosts file to point www.orbited, sub.www.orbited, and xp.orbited at 127.0.0.1.
+   </div>
+  </div>
+  <div class="block">
+   <div class="blockTopic">
+    Where
+   </div>
+   <div class="blockBody">
+     Automated Socket Tests:
+     <ul class="blockList">
+      <li>
+        <a href="http://localhost:8000/static/tests/tcpsocket.html">Same Domain</a>
+      </li>
+      <li>
+        <a href="http://xp.orbited:8000/static/tests/tcpsocket.html">Cross-Port</a>
+      </li>
+      <li>
+        <a href="http://www.orbited:8000/static/tests/tcpsocket.html">Cross-Subdomain</a>
+      </li>
+     </ul>
+     Freeform Socket Tests:
+     <ul class="blockList">
+      <li>
+        <a href="http://localhost:8000/static/tests/freeform.html">Same Domain</a>
+      </li>
+      <li>
+        <a href="http://xp.orbited:8000/static/tests/freeform.html">Cross-Port</a>
+      </li>
+      <li>
+        <a href="http://www.orbited:8000/static/tests/freeform.html">Cross-Subdomain</a>
+      </li>
+     </ul>
+     Transport Tests:
+     <ul class="blockList">
+      <li>
+        <a href="http://localhost:8000/static/tests/tcpsocket.html#XHRStream">XHR Stream (Firefox)</a>
+      </li>
+      <li>
+        <a href="http://localhost:8000/static/tests/tcpsocket.html#HTMLFile">HTMLFile (IE)</a>
+      </li>
+      <li>
+        <a href="http://localhost:8000/static/tests/tcpsocket.html#SSE">SSE (Opera)</a>
+      </li>
+      <li>
+        <a href="http://localhost:8000/static/tests/tcpsocket.html#LongPoll">Long Poll</a>
+      </li>
+      <li>
+        <a href="http://localhost:8000/static/tests/tcpsocket.html#Poll">Poll</a>
+      </li>
+     </ul>
+     Component Tests:
+     <ul class="blockList">
+      <li>
+        <a href="b64.html">B64 Test</a>
+      </li>
+      <li>
+        <a href="utf8.html">UTF8 Test</a>
+      </li>
+     </ul>
+   </div>
+  </div>
+ </body>
+</html>

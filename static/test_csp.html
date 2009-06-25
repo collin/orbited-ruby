@@ -1,0 +1,53 @@
+<html>
+ <head>
+  <script>document.domain = document.domain</script>
+  <script src="Orbited.js"></script>
+  <script>
+   DATA = []
+   tcp = null;
+   function print(s) {
+       output = document.getElementById("shell")
+       output.innerHTML += "&rarr; " + s + "<br>"
+       output.scrollTop = self.output.scrollHeight
+   }
+    if (typeof(console) == "undefined")
+       console = { log: print}
+
+   function connect() {
+        session = new Orbited.CometSession()
+//        var connUrl = new URL(location.href)
+//        connUrl.path = "/echo"
+//        connUrl.qs = ""
+//        connUrl.hash = ""
+//        connUrl.domain = "www.test.local"
+        session.open('/tcp')//connUrl.render())
+        session.onopen = function() {
+            print("Connection opened");
+        }
+        session.onread = function(data) { 
+            DATA.push(data)
+            print("RECV: " + data )
+        }
+        session.onclose = function() { print("Connection closed") }
+   }
+
+   function send() {
+        if (session.readyState < 3)
+            print("ERR: Not Connected")
+        else if (session.readyState > 3 ) {
+            print("ERR: Disconnect(ed)(ing)")
+        }
+        else {
+            var d = document.getElementById("data").value
+            session.send(d)
+            print("SEND: " + d)
+        }
+   }
+  </script>
+ </head>
+ <body>
+  <button onClick=connect()>connect</button><br>
+  <input type=text id=data> <button onClick=send()>send</button><br>
+  <div style="border: 1px solid black; height: 200px; overflow-y: scroll" id="shell"></div>
+ </body>
+</html>

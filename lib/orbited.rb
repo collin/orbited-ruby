@@ -4,6 +4,9 @@ require 'pathname'
 require 'extlib/assertions'
 require 'extlib/hook'
 require 'json'
+require 'rack'
+require 'uuid'
+require 'moneta/memory'
 
 Pathname.send :alias_method, :/, :+
 
@@ -19,7 +22,13 @@ module Orbited
   end
   
   def self.root
-    Pathname.new(File.dirname __FILE__)
+    @root ||= Pathname.new(File.dirname __FILE__).expand_path
+  end
+  
+  def self.config
+    @config ||= YAML.load( (root/'config.yml') ).merge {
+      :tcp_session_storage => Moneta::Memory
+    }
   end
   
 end

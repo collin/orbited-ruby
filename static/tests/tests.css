@@ -1,0 +1,29 @@
+body {
+    font-family: sans-serif;
+}
+a:link, a:visited {
+    text-decoration: none;
+    color: blue;
+}
+a:hover {
+    color: red;
+}
+.box {
+    border: 1px solid gray;
+    padding: 5px;
+}
+.block {
+    margin: auto;
+    padding: 5px;
+}
+.blockList {
+    border-left: 1px solid gray;
+    font-size: 80%;
+}
+.blockTopic {
+    font-size: 150%;
+}
+.blockBody {
+    color: gray;
+    margin-bottom: 5px;
+}

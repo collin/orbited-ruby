@@ -1,0 +1,62 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+    <head>
+        <title>Testing Orbited's base64 encoding and decoding</title>
+        <link rel='stylesheet' href='tests.css'>
+        <script type="text/javascript" src="/static/tests/lib/doh/doh.js" djConfig="isDebug:true"></script>
+        <script src="/static/Orbited.js"></script>
+        <script type="text/javascript">
+            dojo.require("doh.runner");
+
+            dojo.addOnLoad(function() {
+                doh.register("Orbited",
+                    [
+                        {
+                            name: "base64_encode",
+                            runTest: function(t) {
+                                var encode = Orbited.base64.encode;
+                                t.is("", encode(""));
+                                t.is("AQ==", encode("\x01"));
+                                t.is("AQI=", encode("\x01\x02"));
+                                t.is("AQID", encode("\x01\x02\x03"));
+                                t.is("AA==", encode("\0"));
+                                t.is("AAA=", encode("\0\0"));
+                                t.is("AAAA", encode("\0\0\0"));
+                            }
+                        },
+
+                        {
+                            name: "base64_decode",
+                            runTest: function(t) {
+                                var decode = Orbited.base64.decode;
+                                t.is("", decode(""));
+                                t.is("\x01", decode("AQ=="));
+                                t.is("\x01\x02", decode("AQI="));
+                                t.is("\x01\x02\x03", decode("AQID"));
+                                t.is("\0", decode("AA=="));
+                                t.is("\0\0", decode("AAA="));
+                                t.is("\0\0\0", decode("AAAA"));
+                            }
+                        }
+                    ]
+                );
+
+                doh.run();
+            })
+        </script>
+    </head>
+    <body>
+        <div class="block">
+            <a href="index.html">back to Tests Main</a>
+            <div class="blockTopic">
+                Base64 Tests
+            </div>
+            <div class="blockBody">
+                When testing, always use orbited-debug.cfg.
+            </div>
+            <div class="blockBody">
+                NB: if you're running Firefox with Firebug, look at its console.
+            </div>
+        </div>
+    </body>
+</html>

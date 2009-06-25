@@ -13,7 +13,8 @@ module Orbited
       alias closed? closed
       alias open? open
       
-      def initialize 
+      def initialize tcp_connection_resource
+        @tcp_connection_resource = tcp_connection_resource
         @open = false
         @closed = false
         super
@@ -54,7 +55,7 @@ module Orbited
         end
       end
 
-      def sendPacket(packet)
+      def send_packet(*packet)
         @packets << packet
       end
 

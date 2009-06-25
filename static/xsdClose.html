@@ -1,0 +1,23 @@
+<html><head><script>
+var origDomain = document.domain;
+try {
+    document.domain = location.hash.slice(1);
+}
+catch (e) {
+    throw new Error("Cross-Subdomain Error. See: http://orbited.org/wiki/Deployment#Cross-SubdomainDeployment");
+}
+var createXHR = function () {
+    try { return new XMLHttpRequest(); } catch(e) {}
+    try { return new ActiveXObject('MSXML3.XMLHTTP'); } catch(e) {}
+    try { return new ActiveXObject('MSXML2.XMLHTTP.3.0'); } catch(e) {}
+    try { return new ActiveXObject('Msxml2.XMLHTTP'); } catch(e) {}
+    try { return new ActiveXObject('Microsoft.XMLHTTP'); } catch(e) {}
+    throw new Error('Could not find XMLHttpRequest or an alternative.');
+}
+var sendCloseFrame = function(url, data) {
+    try {document.domain=origDomain} catch(e){}
+    var xhr = createXHR();
+    xhr.open('POST', url, false);
+    xhr.send(data);
+}
+</script></head></html>

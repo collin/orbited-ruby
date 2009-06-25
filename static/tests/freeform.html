@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <title>TCPSocket freeform tests</title>
+  <link rel='stylesheet' href='tests.css'>
+  <script>document.domain=document.domain;</script>
+  <script src="/static/Orbited.js"></script>
+  <script type="text/javascript">
+    if (document.domain == "xp.orbited") {
+        Orbited.settings.port = 5000;
+        document.title += ": X-Port";
+    }
+    else if (Orbited.settings.hostname == "www.orbited") {
+        Orbited.settings.hostname = "sub.www.orbited";
+        document.title += ": X-Subdomain";
+    }
+    else {
+        document.title += ": Same Domain";
+    }
+    var FreeFormTest = function() {
+        var self = this;
+        self.sock = null;
+        self.create = function() {
+            self.sock = new Orbited.TCPSocket();
+            self.sock.onopen = function() {
+                alert("connection open");
+            }
+            self.sock.onread = function(data) {
+                alert("read:"+data);
+            }
+            self.sock.onclose = function(data) {
+                alert("close:"+data);
+            }
+            alert("socket created");
+        }
+        self.open = function() {
+            var hostname = document.getElementById('hostname').value;
+            var port = parseInt(document.getElementById('port').value);
+            self.sock.open(hostname, port);
+        }
+        self.send = function() {
+            var data = document.getElementById('sendData').value;
+            self.sock.send(data);
+        }
+        self.close = function() {
+            self.sock.close();
+        }
+        self.refreshPage = function() {
+            location = location;
+        }
+    }
+    var fft = new FreeFormTest();
+  </script>
+ </head>
+ <body>
+    <div class="block">
+        <a href="index.html">back to Tests Main</a>
+        <div class="blockTopic">
+            TCPSocket Freeform Tests
+        </div>
+        <div class="blockBody">
+            When testing, always use orbited-debug.cfg.
+        </div>
+        <div class="box">
+            <button onClick=fft.create()>New Socket</button>
+            <button onClick=fft.open()>Open Connection</button>
+            <button onClick=fft.send()>Send Data</button>
+            <button onClick=fft.close()>Close Connection</button>
+            <button onClick=fft.refreshPage()>Refresh Page</button>
+            <label for=hostname>Hostname</label><input id=hostname>
+            <label for=port>Port</label><input id=port><br>
+            <label for=sendData>Send Data</label><input id=sendData>
+        </div>
+    </div>
+ </body>
+</html>

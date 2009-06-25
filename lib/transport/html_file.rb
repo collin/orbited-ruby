@@ -24,7 +24,7 @@ module Orbited
       def write(packets)
         # TODO make some JS code to remove the script elements from DOM
         #      after they are executed.
-        payload = "<script>e(#{JSON.encode(packets)});</script>"
+        payload = "<script>e(#{JSON.dump(packets)});</script>"
         Orbited.logger.debug('write ', payload)
         send_data(payload)
         @total_bytes += payload.size
