@@ -1,47 +1,39 @@
 module Orbited
   module Session
     class TCPResource
+      include Headers
+      
       def self.connections
         @connections ||= Orbited.config[:tcp_session_storage].new
+      end
+      
+      def connections
+        @connections ||= self.class.connections
       end
       
       def initialize(listening_port)
         @listening_port = listening_port
       end
-
-      def render(request)
+    
+      before(:call) { merge_default_headers }
+      def call(env)
         key = nil
-        while key is nil or connections.contains?(key)
-            key = TCPKey.generate(32)
-        end
+        while not(key) or connections.contains?(key) { key = TCPKey.generate(32) }
+        
         # request.client and request.host should be address.IPv4Address classes
         host_header = request.headers['host']
         connections[key] = TCPConnectionResource(key, request.client, request.host, host_header)
-        @listening_port.connectionMade(self.connections[key])
-        Orbited.logger.debug('created conn: ', self.connections[key].inspect)
-        request.setHeader('cache-control', 'no-cache, must-revalidate')
-        return key
-      end
-
-      def getChild(path, request)
-        if path == 'static':
-            return self.static_files
-        if path not in self.connections:
-            if 'htmlfile' in request.path:
-                return transports.htmlfile.CloseResource();
-            return error.NoResource("<script>alert('whoops');</script>")
-#        print 'returning self.connections[%s]' % (path,)
-        return self.connections[path]
+        @listening_port.connectionMade(connections[key])
+        Orbited.logger.debug('created conn: ', connections[key].inspect)
+        [200, headers, key]
       end
          
-      def removeConn(conn)
-        if conn.key in self.connections:
-            del self.connections[conn.key]
-        end
+      def remove_connection(connection)
+        connections.delete connection.key
       end
 
-      def connectionMade(conn)
-        @listening_port.connectionMade(conn)
+      def connection_made(connection)
+        @listening_port.connection_made(connection)
       end
     end
   end

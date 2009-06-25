@@ -4,7 +4,7 @@ module Orbited
       HeartbeatInterval = 30
             
       def write(packets)
-        payload = JSON.dumph(packets)
+        payload = JSON.dump(packets)
         data =
           'Event payload\n'                                           +
           payload.split("\n").map{|line| "data #{line}"}.join("\n")   +

@@ -1,14 +1,14 @@
 module Orbited
   module Session
     class TCPConnectionResource
-      ping_timeout = 30
-      ping_interval = 30
-      Orbited.logger = logging.get_Orbited.logger('orbited.cometsession.TCPConnectionResource')
+      PingTimeout = 30
+      PingInterval = 30
+      AsyncResponse = [-1, {}, []].freeze
+      AsyncCallback = "async.callback".freeze
 
       attr_reader :peer, :host
 
-      def __init__(root, key, peer, host, host_header, **options)
-        resource.Resource.__init__
+      def initialize(root, key, peer, host, host_header)
         @root = root
         @key = key
         @peer = peer
@@ -57,16 +57,17 @@ module Orbited
       def get_child(path, request)
         if Transport::Map.contain? path
           return Transport.create(path, self)
+        else
+          raise NoResource("No such child resource.")
         end
-        raise NoResource("No such child resource.")
       end
 
-      def render(request)
-        Orbited.logger.debug('render request=%r' % request);
+      def call(env)
+        @request = Rack::Request.new env
+        Orbited.logger.debug("render request=#{request}");
         stream = request.body.read
-        Orbited.logger.debug('render request.content=%r' % stream);
         
-        ack(transport.request.params['ack'].to_i) if ack
+        ack(@request.params['ack'].to_i) if @request.params['ack']
         
         encoding = request.headers['tcp-encoding']
         # TODO instead of .write/.finish just return OK?
@@ -75,7 +76,7 @@ module Orbited
         reset_ping_timer
         # TODO why not call parse_data here?
         reactor.callLater(0, parse_data, stream)
-#        server.NOT_DONE_YET
+        AsyncResponse
       end
 
       def parse_data(data)
@@ -156,7 +157,7 @@ module Orbited
         transport.CONNECTION = self
         transport.onClose.addCallback(@transport_closed)
         
-        ack(transport.request.params['ack'].to_i) if ack
+        ack(@request.params['ack'].to_i) if @request.params['ack']
         resend_unack_queue
         send_msg_queue
         unless @open

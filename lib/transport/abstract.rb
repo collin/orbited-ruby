@@ -1,49 +1,35 @@
 module Orbited
   module Transport
-    class Abstract < EventMachine::Connection
+    class Abstract
+      include Headers
       include Extlib::Hook
       
       HeartbeatInterval = 5
       MaxBytes = 1048576
       
-      attr_reader :open
-      attr_reader :closed
-      attr_reader :heartbeat_timer
+      attr_reader :open, :closed, :heartbeat_timer
       
       alias closed? closed
       alias open? open
       
-      def initialize tcp_connection_resource
-        @tcp_connection_resource = tcp_connection_resource
+      def initialize tcp_connection
+        @tcp_connection = tcp_connection
+        @renderer = DeferrableBody.new
         @open = false
         @closed = false
-        super
       end
-      
-      before(:post_init) { headers.merge Transport.headers[config_name] }
-      
-      def config_name
-        @config_name ||= self.class.name.split("::").last
-      end
-      
-      def response
-        [200, headers, "ok"]
-      end
-      
-      def headers
-        @headers ||= {}
-      end
-      
+
       def render(request)
         @open = true
         @packets = []
         @request = request
         opened
         reset_heartbeat
+        [200, headers, @renderer]
       end
 
-      def resetHeartbeat
-        @heartbeat_timer = EM::add_timer(HeartbeatInterval) &method(:do_heartbeat)
+      def reset_heartbeat
+        @heartbeat_timer = EM::Timer.new HeartbeatInterval, &method(:do_heartbeat)
       end
   
       def do_heartbeat
@@ -55,7 +41,7 @@ module Orbited
         end
       end
 
-      def send_packet(*packet)
+      def send_packet(*packet)\
         @packets << packet
       end
 
