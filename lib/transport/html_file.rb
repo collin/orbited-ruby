@@ -9,7 +9,7 @@ module Orbited
           <body>
       HTML
       
-      InitialData = ([0, 256 - initial_data.size].max * ' ') + "\n"
+      InitialData = (' ' * [0, 256 - initial_data.size].max) + "\n"
 
       
       def post_init
@@ -40,13 +40,13 @@ module Orbited
       end
     end
 
-    class CloseResource(resource.Resource)
+    class CloseResource
       def getChild(path, request)
         self
       end
     
       def render(request)      
-        return format_block("
+        return format_block('
             <html>
              <head>
               <script src="../../static/HTMLFileClose.js"></script>
@@ -54,7 +54,7 @@ module Orbited
              <body>
              </body>
             </html> 
-        ")
+        ')
       end
     end
   end

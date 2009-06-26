@@ -20,17 +20,20 @@ module Orbited
         render
       end
 
-      def render(request)
+      def render
         @open = true
         @packets = []
-        @tcp_connection.transport_opened self
         reset_heartbeat
+        @tcp_connection.transport_opened self
         merge_default_headers
-        [200, headers, @renderer]
       end
 
+      def response
+        [200, headers, @renderer]
+      end
+      
       def reset_heartbeat
-        @heartbeat_timer = EM::Timer.new(HeartbeatInterval) &method(:do_heartbeat)
+        @heartbeat_timer = EM::Timer.new(HeartbeatInterval) { do_heartbeat }
       end
   
       def send_data *data
@@ -39,7 +42,7 @@ module Orbited
   
       def do_heartbeat
         if closed?
-          Orbited.logger.debug("heartbeat called - already closed", inspect)
+          Orbited.logger.debug("heartbeat called - already closed", pretty_inspect)
         else
           write_heartbeat
           reset_heartbeat
@@ -51,9 +54,9 @@ module Orbited
       end
 
       def flush
-        write packets
+        write @packets
         @packets = []
-        heartbeat_timer.cancel
+        @heartbeat_timer.cancel
         reset_heartbeat
       end
 
@@ -61,7 +64,7 @@ module Orbited
         Orbited.logger.debug('unbind called')
 
         if closed?
-          Orbited.logger.debug("close called - already closed", inspect)
+          Orbited.logger.debug("close called - already closed", pretty_inspect)
           return
         end
         
@@ -73,14 +76,15 @@ module Orbited
       def encode(packets)
         output = []
         packets.each do |packet|
-          packet.each_with_index do |index, arg|
+          packet.each_with_index do |arg, index|
             if index == packet.size - 1
               output << '0'
             else
               output << '1'
             end
-            output << "#{arg.length},#{arg}"
+            output << "#{arg.to_s.length},#{arg}"
           end
+        end
         return output.join
       end
       
@@ -95,7 +99,7 @@ module Orbited
 
       def write_heartbeat
         Orbited.logger.info "
-          Call to unimplemented method write_heartbeat on #{inspect}
+          Call to unimplemented method write_heartbeat on #{pretty_inspect}
           Not neccessarily an error. Heartbeat does not always make sense.
         "
       end

@@ -18,5 +18,6 @@ SSE:
 XHRStreaming:
   Content-Type: application/x-orbited-event-stream
   
-TcpResource:
+TCPResource:
   Cache-Control: no-cache, must-revalidate
+  Content-Type: text/plain

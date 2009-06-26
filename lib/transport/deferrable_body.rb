@@ -1,5 +1,5 @@
 module Orbited
-  module Session
+  module Transport
   # Based on version from James Tucker <raggi@rubyforge.org>
     class DeferrableBody
       include EM::Deferrable

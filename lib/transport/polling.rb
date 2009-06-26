@@ -1,6 +1,6 @@
 module Orbited
   module Transport
-    class Pollling < Abstract
+    class Polling < Abstract
 
     # NOTE we override this so we can close as soon as we send out any waiting
     #       packets. We can't put the self.close call inside of self.write

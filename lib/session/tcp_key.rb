@@ -12,7 +12,7 @@ module Orbited
       end
       
       def self.generate length=12
-        length.take{ source.rand }.join
+        length.take{ source[rand source.size] }.join
       end
     end
   end

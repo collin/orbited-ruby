@@ -1,5 +1,6 @@
 module Orbited
   module Transport
+  
     Map = {
       'xhrstream' => XHRStreaming,
       'htmlfile' => HTMLFile,

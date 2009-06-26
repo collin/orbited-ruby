@@ -1,10 +1,12 @@
 module Orbited
   module Middleware
-    def self.included klass
-      klass.instance_eval do
-        use Rack::Static, :urls => ['/static'], Orbited.root
+    def self.install builder
+      builder.instance_eval do
+        map '/static' do
+          run Rack::Directory.new(Orbited.root/'../static'.to_s)
+        end
         map '/tcp' do
-          use Orbited::Session::TcpResource
+          run Orbited::Session::TCPResource.new
         end
       end
     end

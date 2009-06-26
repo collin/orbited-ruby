@@ -3,13 +3,11 @@ module Orbited
     class TCPConnectionResource
       PingTimeout   = 30
       PingInterval  = 30
-      AsyncResponse = [-1, {}, []].freeze
       AsyncCallback = "async.callback".freeze
 
       attr_reader :peer, :host
 
-      def initialize(root, key, peer, host, host_header)
-        @root = root
+      def initialize(key, peer, host, host_header)
         @key = key
         @peer = peer
         @host = host
@@ -50,7 +48,7 @@ module Orbited
 
       def handle_get(request, transport_name)
         @request = request
-        Transport.create(transport_name, self)
+        Transport.create(transport_name, self).response
       end
 
       def handle_post(request) 
@@ -144,10 +142,9 @@ module Orbited
           @comet_transport.close
           @comet_transport = nil
         end
-        Orbited.logger.debug("new transport #{transport.inspect}")
+        Orbited.logger.debug("new transport #{transport.pretty_inspect}")
         @comet_transport = transport
-#        transport.CONNECTION = self
-        transport.after :close { transport_closed transport }
+#        transport.after(:close) { transport_closed transport }
         
         acknowledge
         resend_unacknowledge_queue
@@ -161,13 +158,13 @@ module Orbited
 
       def reset_ping_timer
         cancel_timers
-        @ping_timer = reactor.callLater(ping_interval, send_ping)
+        @ping_timer = EM::Timer.new(PingInterval) { send_ping }
       end
 
       def send_ping
         @ping_timer = nil
         send(TCPPing)
-        @timeout_timer = reactor.callLater(ping_timeout, timeout)
+        @timeout_timer = EM::Timer.new(PingTimeout) { timeout }
       end
 
       def timeout
@@ -186,7 +183,7 @@ module Orbited
         end
       end
 
-      def hardClose
+      def hard_close
         @closed = true
         cancel_timers
         if @close_timer
@@ -207,25 +204,27 @@ module Orbited
           return
         end
         @closing = true
-        Orbited.logger.debug('close reason=%s %s' % (reason, repr))
+         
+        Orbited.logger.debug("close reason=#{reason} #{pretty_inspect}")
         send(TCPClose(reason))
         if now
-          hardClose
+          hard_close
         elsif not(@closing)
           cancel_timers
-          @close_timer = reactor.callLater(ping_interval, hardClose)
+          @close_timer = reactor.callLater(ping_interval, hard_close)
         end
       end
 
       def acknowledge
-        return unless @request && @request.params['acknowledge']
-        acknowledge(@request.params['acknowledge'].to_i) 
+        return unless @request && @request.params['ack']
+        acknowledge_id = @request.params['ack'].to_i 
         Orbited.logger.debug("acknowledge acknowledge_id=#{acknowledge_id}")
         acknowledge_id = [acknowledge_id, @packet_id].min
-        return if acknowledge_id <= @last_acknowledge_id
-        (acknowledge_id - @last_acknowledge_id).times do
-          data, packet_id = @unacknowledge_queue.pop
-          close("close acknowledgeed", true) if data.is_a?(TCPClose)
+        if acknowledge_id <= @last_acknowledge_id
+          (acknowledge_id - @last_acknowledge_id).times do
+            data, packet_id = @unacknowledge_queue.pop
+            close("close acknowledgeed", true) if data.is_a?(TCPClose)
+          end
         end
         @last_acknowledge_id = acknowledge_id
       end
@@ -242,7 +241,7 @@ module Orbited
         else
           @packet_id += 1
           _send(data, @packet_id)
-          @unacknowledge_queue.append([data, @packet_id])
+          @unacknowledge_queue << [data, @packet_id]
           if flush
             @comet_transport.flush
           end

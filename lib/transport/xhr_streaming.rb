@@ -2,8 +2,9 @@ module Orbited
   module Transport
     class XHRStreaming < Abstract
 
-      def post_init
+      def initialize tcp_connection
         @total_bytes = 0
+        super
         # Safari/Tiger may need 256 bytes
         send_data(' ' * 256)
       end
@@ -23,7 +24,7 @@ module Orbited
       end
 
       def write_heartbeat
-        Orbited.logger.debug("write_heartbeat #{inspect}")
+        Orbited.logger.debug("write_heartbeat #{pretty_inspect}")
         send_data 'x'
       end
       
