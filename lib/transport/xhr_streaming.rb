@@ -11,16 +11,33 @@ module Orbited
 
       def write(packets)
         # TODO why join the packets here?  why not do N request.write?
-        Orbited.logger.debug("writing packets #{packets}")
+        Orbited.logger.debug("writing packets #{packets.pretty_inspect}")
         payload = encode(packets)
-        Orbited.logger.debug("writing payload #{payload}")
+        Orbited.logger.debug("writing payload #{payload.pretty_inspect}")
         
         send_data(payload)
         @total_bytes += payload.size
         if @total_bytes > MaxBytes
           Orbited.logger.debug('over maxbytes limit')
-          close_connection_after_writing
+          @renderer.succeed
         end
+      end
+
+      def encode(packets)
+        output = []
+        for packet in packets
+          packet.each_with_index do |arg, i|
+            if(i == (packet.size - 1))
+                output.push('0')
+            else
+                output.push('1')
+            end
+            output.push(arg.size)
+            output.push(',')
+            output.push(arg)
+          end
+        end
+        output.join
       end
 
       def write_heartbeat

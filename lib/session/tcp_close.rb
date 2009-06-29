@@ -1,6 +1,6 @@
 module Orbited
   module Session
-    class TCPPing
+    class TCPClose
       attr_reader :reason
       def initialize reason
         @reason = reason

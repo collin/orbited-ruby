@@ -3,7 +3,8 @@ module Orbited
     class TCPOption
       attr_reader :payload
       def initialize(name, val)
-        @payload = str(name) + ',' + str(val)
+        @payload = "#{name},#{val}"
+        Orbited.logger.debug "created TCPOption with payload: #{@payload}"
       end
     end
   end

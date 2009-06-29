@@ -20,4 +20,4 @@ XHRStreaming:
   
 TCPResource:
   Cache-Control: no-cache, must-revalidate
-  Content-Type: text/plain
+  Content-Type: text/html

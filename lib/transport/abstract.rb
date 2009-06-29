@@ -4,10 +4,10 @@ module Orbited
       include Headers
       include Extlib::Hook
       
-      HeartbeatInterval = 5
+      HeartbeatInterval = 15
       MaxBytes = 1048576
       
-      attr_reader :open, :closed, :heartbeat_timer
+      attr_reader :open, :closed, :heartbeat_timer, :renderer
       
       alias closed? closed
       alias open? open
@@ -17,7 +17,6 @@ module Orbited
         @renderer = DeferrableBody.new
         @open = false
         @closed = false
-        render
       end
 
       def render
@@ -26,10 +25,12 @@ module Orbited
         reset_heartbeat
         @tcp_connection.transport_opened self
         merge_default_headers
+        Orbited.logger.debug "called render on #{pretty_inspect}"
+        [200, headers, @renderer]
       end
 
-      def response
-        [200, headers, @renderer]
+      def inspect
+        "#<#{self.class.name}:#{object_id}>"
       end
       
       def reset_heartbeat
@@ -42,15 +43,15 @@ module Orbited
   
       def do_heartbeat
         if closed?
-          Orbited.logger.debug("heartbeat called - already closed", pretty_inspect)
+          Orbited.logger.debug("heartbeat called - already closed #{pretty_inspect}")
         else
           write_heartbeat
           reset_heartbeat
         end
       end
 
-      def send_packet(*packet)
-        @packets << packet.flatten
+      def send_packet(name, id, data=nil)
+        data ?  @packets << [id, name, data] :  @packets << [id, name]
       end
 
       def flush
@@ -61,10 +62,10 @@ module Orbited
       end
 
       def close
-        Orbited.logger.debug('unbind called')
+        Orbited.logger.debug('close called')
 
         if closed?
-          Orbited.logger.debug("close called - already closed", pretty_inspect)
+          Orbited.logger.debug("close called - already closed #{pretty_inspect}")
           return
         end
         
@@ -86,6 +87,11 @@ module Orbited
           end
         end
         return output.join
+      end
+      
+      def on_close(&block)
+        renderer.callback(&block)
+        renderer.errback(&block)
       end
       
       # Override these

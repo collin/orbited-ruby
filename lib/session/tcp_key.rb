@@ -11,8 +11,8 @@ module Orbited
         @source ||= ("a".."z").to_a + (0..9).to_a
       end
       
-      def self.generate length=12
-        length.take{ source[rand source.size] }.join
+      def self.generate size
+        size.take{ source[rand(source.size)] }.join
       end
     end
   end

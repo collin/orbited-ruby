@@ -2,6 +2,7 @@ require 'rubygems'
 require 'pp'
 require 'logger'
 require 'yaml'
+require 'base64'
 require 'pathname'
 require 'extlib/assertions'
 require 'extlib/hook'
@@ -51,8 +52,9 @@ Orbited.root.instance_eval do
   
   (self/'session').instance_eval do
     req 'fake_tcp_transport'
-    req 'port'
+    req 'proxy'
     req 'tcp_close'
+    req 'tcp_open'
     req 'tcp_key'
     req 'tcp_option'
     req 'tcp_ping'

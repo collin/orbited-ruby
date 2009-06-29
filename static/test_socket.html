@@ -23,7 +23,6 @@
 //        connUrl.qs = ""
 //        connUrl.hash = ""
 //        connUrl.domain = "www.test.local"
-        tcp.open('irc.freenode.net', 6667, false)//connUrl.render())
         tcp.onopen = function() {
             print("Connection opened");
         }
@@ -32,9 +31,9 @@
             print("RECV: " + data )
         }
         tcp.onclose = function(code) { 
-            console.log('lkjlkj');
             print("Connection closed " + code); 
         }
+        tcp.open('irc.freenode.net', 6667, false)//connUrl.render())
    }
 
    function send() {

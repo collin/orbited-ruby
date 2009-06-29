@@ -5,9 +5,11 @@ module Orbited
       include EM::Deferrable
     
       attr_reader :queue
+      attr_accessor :all_sent
     
       def initialize
         @queue = []
+        @all_sent = ""
       end
     
       def closed?
@@ -30,13 +32,17 @@ module Orbited
     
       private
         def schedule_dequeue
+          Orbited.logger.debug "@body_callback? #{@body_callback.pretty_inspect}"
           return unless @body_callback
           EM.next_tick do
+            Orbited.logger.debug "running scheduled dequeue on queue #{@queue.inspect}"
             next unless body = @queue.shift
             body.each do |chunk|
+              self.all_sent += chunk
+              Orbited.logger.debug "sent on deferrable_body: #{all_sent}"
               @body_callback.call(chunk)
             end
-            schedule_dequeue unless @queue.empty?
+            schedule_dequeue if @queue.any?
           end
         end
     end
