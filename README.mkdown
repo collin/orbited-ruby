@@ -9,8 +9,20 @@ All the awesomeness of Orbited.
 
 Packed neatly into your Ruby workflow.
 
-    #rackup.ru
+    #example.ru
     require 'lib/orbited'
     Orbited::Middleware.install self
     
 
+Want to give it a try?
+
+    $ rackup -s thin --env none --port 3500 example.ru
+
+Then open up
+
+    http://localhost:3500/static/test_socket.html
+
+Click "connect", watch messages from from irc.freenode.net:6667 come into your browser. That is about the extent that this project works right now.
+
+
+!! Only works with thin for now. Rack needs to codify asynchronous callbacks.
