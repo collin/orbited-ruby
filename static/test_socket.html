@@ -31,7 +31,9 @@
             print("RECV: " + data )
         }
         tcp.onclose = function(code) { 
-            print("Connection closed " + code); 
+            var msg = "Connection closed " + code;
+            print(msg); 
+            console.log(msg);
         }
         tcp.open('irc.freenode.net', 6667, false)//connUrl.render())
    }

@@ -26,8 +26,7 @@ module Orbited
       # TODO: integrate Rack::Mount
       def call(env)
         @request = Rack::Request.new env
-    
-        Orbited.logger.debug "handling rack env: \n#{env.pretty_inspect}"
+        Orbited.logger.debug "handling rack env: #{env["REQUEST_METHOD"]} #{@request.path}"
 
         connection = connections[session_id] if session_id
         Orbited.logger.debug "path #{@request.path}"
@@ -47,7 +46,7 @@ module Orbited
 
         # @request.client and @request.host should be address.IPv4Address classes
         Orbited.logger.debug("creating connection #{key.inspect}")
-        connections[key] = TCPConnectionResource.new(key, @request)
+        connections[key] = TCPConnectionResource.new(self, key, @request)
         Orbited.logger.debug("created conn: \n#{connections[key].pretty_inspect}")
         merge_default_headers
         [200, headers, key]

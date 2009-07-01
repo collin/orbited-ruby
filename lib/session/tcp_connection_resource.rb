@@ -6,10 +6,11 @@ module Orbited
       AsyncCallback = "async.callback".freeze
       
 
-      attr_reader :peer, :host
+      attr_reader :peer, :host, :request
 
-      def initialize(key, request)
+      def initialize(tcp_resource, key, request)
         Orbited.logger.debug "initializing #{self.pretty_inspect}"
+        @tcp_resource = tcp_resource
         @key = key
         @request = request
         
@@ -34,18 +35,26 @@ module Orbited
         reset_ping_timer
       end
 
-      def lose_connection
-        # TODO self.close ?
-        close('lose_connection', true)
-        nil
+      def host
+        @request.host
+      end
+      
+      def port
+        @request.port
       end
 
-      def connection_lost
+      def lose_connection
+        # TODO self.close ?
+        close('loseConnection', true)
+      end
+
+      def unbind
         Orbited.logger.debug("connectionLost... already triggered? #{@lost_triggered}")
         unless @lost_triggered
           Orbited.logger.debug('do trigger');
           @lost_triggered = true
-          @socket.connection_lost
+          @proxy.unbind 
+          @tcp_resource.remove_connection @key
         end
       end
 
@@ -61,8 +70,8 @@ module Orbited
 
       def handle_post(request) 
         @request = request
-        EM.next_tick { parse_data @request.body.read }
-        AsyncResponse
+        parse_data @request.body.read
+        render
       end
       
       def render
@@ -72,9 +81,9 @@ module Orbited
         
         encoding = request.headers['tcp-encoding']
         # TODO instead of .write/.finish just return OK?
-        request.write('OK')
         request.finish
         reset_ping_timer
+        [200, {}, 'OK']
       end
 
       def parse_data(data)
@@ -124,8 +133,8 @@ module Orbited
 #              pass
             end
             data = Base64.decode64(args[2])
-            Orbited.logger.debug "transport is-a FakeTCPTransport #{@socket.pretty_inspect}"
-            @socket.data_received(data)
+            Orbited.logger.debug "transport is-a FakeTCPTransport #{@proxy.pretty_inspect}"
+            @proxy.data_received(data)
           elsif name == 'ping'
             if args.size != 2
               # TODO kill the connection with error.
@@ -143,6 +152,15 @@ module Orbited
         @comet_transport = nil if transport == @comet_transport
       end
 
+      def post_init
+        @init ||= 0
+        @init += 1
+        if @init > 1
+          raise "WTF"
+        end
+        send "1"
+      end
+      
       # Called by transports.comet_transport.render
       def transport_opened(transport)
         reset_ping_timer
@@ -162,7 +180,7 @@ module Orbited
           @open = true
           send TCPOption.new('pingTimeout', PingTimeout)
           send TCPOption.new('pingInterval', PingInterval)
-          send TCPOpen
+          @comet_transport.send_packet('open', @packet_id.to_s)
         end
         @comet_transport.flush
       end
@@ -205,8 +223,7 @@ module Orbited
           @comet_transport.close
           @comet_transport = nil
         end
-        connection_lost
-#        @root.remove_conn
+        unbind
       end
 
       def inspect
@@ -226,7 +243,7 @@ module Orbited
           hard_close
         elsif not(@closing)
           cancel_timers
-          @close_timer = reactor.callLater(ping_interval, hard_close)
+          @close_timer = EM.next_tick { hard_close }
         end
       end
 
@@ -267,16 +284,15 @@ module Orbited
         Orbited.logger.debug("_send data=#{data} packet_id=#{packet_id}")
         if data == TCPPing
           @comet_transport.send_packet('ping', packet_id.to_s)
-        elsif data == TCPOpen
-          @comet_transport.send_packet('open', packet_id.to_s)
         elsif data.is_a? TCPClose
           @comet_transport.send_packet('close', packet_id.to_s, data.reason)
         elsif data.is_a? TCPOption
           @comet_transport.send_packet('opt', packet_id.to_s, data.payload)
         else
-          @comet_transport.send_packet('data', packet_id.to_s, Base64.b64encode(data))
+          @comet_transport.send_packet('data', packet_id.to_s, Base64.b64encode(data).strip)
         end
       end
+      alias error _send
 
       def resend_unacknowledge_queue
         return unless @unacknowledge_queue.any?
