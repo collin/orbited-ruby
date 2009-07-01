@@ -5,8 +5,8 @@ module Orbited
       # Force reconnect ever 30 seconds
       # close_connection_after_writing may take a long time
       # This may cause subtle errors?
-      def post_init
-        @cancel_timer = EM.add_timer(30) { close_connection_after_writing }
+      def initialize
+#        @cancel_timer = EM.add_timer(30) { close_connection_after_writing }
       end
 
       def write(packets)
@@ -21,7 +21,7 @@ module Orbited
         Orbited.logger.debug("writing payload #{payload}")        
         
         send_data(payload)
-        close_connection_after_writing
+#        close_connection_after_writing
       end
 
     end

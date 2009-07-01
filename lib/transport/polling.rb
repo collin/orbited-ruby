@@ -8,7 +8,7 @@ module Orbited
       def flush
         logger.debug('flush')
         @comet_transport.flush
-        close_connection_after_writing
+#        close_connection_after_writing
       end
 
       def write(packets)

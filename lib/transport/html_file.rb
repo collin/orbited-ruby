@@ -12,8 +12,7 @@ module Orbited
       InitialData = (' ' * [0, 256 - initial_data.size].max) + "\n"
 
       
-      def post_init
-        Orbited.logger.debug('opened!')
+      def initialize
         @total_bytes = 0
 #        @close_timer = EM.add_timer(30) { close_connection_after_writing }
 
