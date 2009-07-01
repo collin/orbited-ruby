@@ -1,0 +1,5 @@
+# Orbited-Ruby
+
+> Orbited provides a pure JavaScript/HTML socket in the browser. It is a web router and firewall that allows you to integrate web applications with arbitrary back-end systems. You can implement any network protocol in the browser—without resorting to plugins.
+##### From Orbited.org
+
