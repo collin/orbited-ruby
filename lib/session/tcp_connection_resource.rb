@@ -9,10 +9,11 @@ module Orbited
       attr_reader :peer, :host, :request
 
       def initialize(tcp_resource, key, request)
-        Orbited.logger.debug "initializing #{self.pretty_inspect}"
         @tcp_resource = tcp_resource
         @key = key
         @request = request
+        
+        Orbited.logger.debug "initializing #{self.pretty_inspect}"
         
         @comet_transport = nil
         @msg_queue = []
@@ -29,8 +30,8 @@ module Orbited
         @open = false
         @closed = false
         @closing = false
-        Orbited.logger.debug "Opening Proxy"
         @proxy = Orbited::Session::Proxy.new self
+        Orbited.logger.debug "Opened Proxy: #{@proxy.pretty_inspect}"
 
         reset_ping_timer
       end
@@ -79,9 +80,8 @@ module Orbited
         
         acknowledge
         
-        encoding = request.headers['tcp-encoding']
+        encoding = @request.env["HTTP_TCP_ENCODING"]
         # TODO instead of .write/.finish just return OK?
-        request.finish
         reset_ping_timer
         [200, {}, 'OK']
       end
@@ -227,7 +227,7 @@ module Orbited
       end
 
       def inspect
-        "#<#{self.class.name}:#{object_id}>"
+        "#<#{self.class.name}:#{@key}>"
       end
 
       def close(reason="", now=false)
@@ -248,21 +248,25 @@ module Orbited
       end
 
       def acknowledge
+        Orbited.logger.debug @request.params.inspect
         return unless @request && @request.params['ack']
         acknowledge_id = @request.params['ack'].to_i 
-        Orbited.logger.debug("acknowledge acknowledge_id=#{acknowledge_id}")
         acknowledge_id = [acknowledge_id, @packet_id].min
-        if acknowledge_id <= @last_acknowledge_id
-          (acknowledge_id - @last_acknowledge_id).times do
-            data, packet_id = @unacknowledge_queue.pop
-            close("close acknowledgeed", true) if data.is_a?(TCPClose)
-          end
+        Orbited.logger.debug("acknowledge acknowledge_id=#{acknowledge_id}")
+        Orbited.logger.debug("last ack #{@last_acknowledge_id}")
+        Orbited.logger.debug("#{@unacknowledge_queue.inspect}")
+        return if acknowledge_id <= @last_acknowledge_id
+        
+        (acknowledge_id - @last_acknowledge_id).times do
+          data, packet_id = @unacknowledge_queue.pop
+          close("close acknowledged", true) if data.is_a?(TCPClose)
         end
         @last_acknowledge_id = acknowledge_id
       end
 
       def send_msg_queue
         while @msg_queue.any? and @comet_transport do
+          Orbited.logger.debug "sending message #{@msg_queue.first}"
           send(@msg_queue.pop, false)
         end
       end
@@ -281,7 +285,7 @@ module Orbited
       end
 
       def _send(data, packet_id="")
-        Orbited.logger.debug("_send data=#{data} packet_id=#{packet_id}")
+        Orbited.logger.debug("_send #{data.inspect}")
         if data == TCPPing
           @comet_transport.send_packet('ping', packet_id.to_s)
         elsif data.is_a? TCPClose
@@ -289,7 +293,7 @@ module Orbited
         elsif data.is_a? TCPOption
           @comet_transport.send_packet('opt', packet_id.to_s, data.payload)
         else
-          @comet_transport.send_packet('data', packet_id.to_s, Base64.b64encode(data).strip)
+          @comet_transport.send_packet('data', packet_id.to_s, Base64.b64encode(data).gsub("\n", ""))
         end
       end
       alias error _send

@@ -11,7 +11,7 @@ module Orbited
 
       def write(packets)
         # TODO why join the packets here?  why not do N request.write?
-        Orbited.logger.debug("writing packets #{packets.pretty_inspect}")
+        Orbited.logger.debug("writing packets #{packets.inspect}")
         payload = encode(packets)
         Orbited.logger.debug("writing payload #{payload.pretty_inspect}")
         

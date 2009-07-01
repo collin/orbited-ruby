@@ -21,6 +21,10 @@ module Orbited
         end 
       end
 
+      def inspect
+        "#<Orbited::Session::Proxy #{@from_host}:#{@from_port} -> #{@to_host}:#{@to_port} >"
+      end
+
       def data_received data
         return @outgoing_connection.send_data(data) if @outgoing_connection
 

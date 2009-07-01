@@ -16,10 +16,6 @@ module Orbited
   
     def merge_default_headers
       headers.merge! Headers[config_name]
-
-      Orbited.logger.debug "Merged default headers #{config_name} 
-        #{Headers[config_name].inspect}
-        #{headers.inspect}" 
     end
   end
 end

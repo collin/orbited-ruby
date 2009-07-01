@@ -12,9 +12,6 @@ module Orbited
         @connections ||= self.class.connections
       end
       
-      def initialize
-      end
-    
       def session_id
         $1 if @request and @request.path[/\/tcp\/([\w]{32})/]
       end
@@ -29,12 +26,8 @@ module Orbited
         Orbited.logger.debug "handling rack env: #{env["REQUEST_METHOD"]} #{@request.path}"
 
         connection = connections[session_id] if session_id
-        Orbited.logger.debug "path #{@request.path}"
-        Orbited.logger.debug "session_id #{session_id}"
-        Orbited.logger.debug "transport_name #{transport_name}"
-        Orbited.logger.debug "existing connection \n#{connection.pretty_inspect}"
-        Orbited.logger.debug "existing connections \n#{connections.keys.pretty_inspect}"
         if connection 
+          Orbited.logger.debug "existing connection #{connection.pretty_inspect}"
           if transport_name
             return connection.handle_get @request, transport_name
           elsif env["REQUEST_METHOD"] == "POST"
@@ -45,7 +38,6 @@ module Orbited
         while not(key) or connections.has_key?(key) do key = TCPKey.generate(32) end
 
         # @request.client and @request.host should be address.IPv4Address classes
-        Orbited.logger.debug("creating connection #{key.inspect}")
         connections[key] = TCPConnectionResource.new(self, key, @request)
         Orbited.logger.debug("created conn: \n#{connections[key].pretty_inspect}")
         merge_default_headers

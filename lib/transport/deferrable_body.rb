@@ -32,14 +32,11 @@ module Orbited
     
       private
         def schedule_dequeue
-          Orbited.logger.debug "@body_callback? #{@body_callback.pretty_inspect}"
           return unless @body_callback
           EM.next_tick do
             next unless body = @queue.shift
             body.each do |chunk|
               self.all_sent += chunk
-              Orbited.logger.debug "running scheduled dequeue on queue #{@queue.inspect}"
-              Orbited.logger.debug "sent on deferrable_body: #{all_sent.inspect}"
               @body_callback.call(chunk)
             end
             schedule_dequeue if @queue.any?

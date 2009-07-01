@@ -14,6 +14,7 @@ module Orbited
       end
       
       def receive_data data
+        Orbited.logger.debug "sending #{data} to #{@acceptor}"
         @acceptor.send data
       end
           
