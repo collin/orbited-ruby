@@ -5,4 +5,10 @@
 
 ![Orbited-Ruby Logo](http://img505.imageshack.us/img505/1465/orbitedruby.png "Orbited-Ruby")
 
+All the awesomeness of Orbited.
 
+Packed neatly into your Ruby workflow.
+
+  #rackup.ru
+  require 'lib/orbited'
+  Orbited::Middleware.install self
