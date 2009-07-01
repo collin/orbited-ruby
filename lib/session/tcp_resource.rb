@@ -34,6 +34,9 @@ module Orbited
             return connection.handle_post @request
           end
         end
+        
+        return NotFound if session_id and not(connection)
+        
         key = nil
         while not(key) or connections.has_key?(key) do key = TCPKey.generate(32) end
 

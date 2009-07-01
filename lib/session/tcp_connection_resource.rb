@@ -49,11 +49,30 @@ module Orbited
         close('loseConnection', true)
       end
 
+      def close(reason="", now=false)
+        if @closed
+          Orbited.logger.debug('close called - already closed')
+          return
+        end
+        @closing = true
+         
+        Orbited.logger.debug("close reason=#{reason} #{pretty_inspect}")
+        send(TCPClose.new(reason))
+        if now
+          hard_close
+        elsif not(@closing)
+          cancel_timers
+          @close_timer = EM.next_tick { hard_close }
+        end
+      end
+
+
       def unbind
         Orbited.logger.debug("connectionLost... already triggered? #{@lost_triggered}")
         unless @lost_triggered
           Orbited.logger.debug('do trigger');
           @lost_triggered = true
+          lose_connection
           @proxy.unbind 
           @tcp_resource.remove_connection @key
         end
@@ -228,23 +247,6 @@ module Orbited
 
       def inspect
         "#<#{self.class.name}:#{@key}>"
-      end
-
-      def close(reason="", now=false)
-        if @closed
-          Orbited.logger.debug('close called - already closed')
-          return
-        end
-        @closing = true
-         
-        Orbited.logger.debug("close reason=#{reason} #{pretty_inspect}")
-        send(TCPClose.new(reason))
-        if now
-          hard_close
-        elsif not(@closing)
-          cancel_timers
-          @close_timer = EM.next_tick { hard_close }
-        end
       end
 
       def acknowledge
