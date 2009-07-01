@@ -9,6 +9,8 @@ All the awesomeness of Orbited.
 
 Packed neatly into your Ruby workflow.
 
-  #rackup.ru
-  require 'lib/orbited'
-  Orbited::Middleware.install self
+    #rackup.ru
+    require 'lib/orbited'
+    Orbited::Middleware.install self
+    
+
