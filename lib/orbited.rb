@@ -12,6 +12,7 @@ require 'uuid'
 require 'moneta'
 require 'moneta/memory'
 require 'eventmachine'
+require 'rack/mount'
 
 class Pathname
   alias / +
