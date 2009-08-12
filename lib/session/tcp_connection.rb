@@ -1,16 +1,19 @@
 module Orbited
   module Session
-    class TCPConnectionResource
+    class TCPConnection
       PingTimeout   = 5
       PingInterval  = 10
-      AsyncCallback = "async.callback".freeze
-      
+      TCPConnections = Orbited.config[:tcp_session_storage].new
 
       attr_reader :peer, :host, :request
+      
+      def self.get(id)
+        TCPConnections[id.to_s]
+      end
 
-      def initialize(tcp_resource, key, request)
+      def initialize
         @tcp_resource = tcp_resource
-        @key = key
+        @key = TCPKey.genereate(TCPConnections)
         @request = request
         
         Orbited.logger.debug "initializing #{self.pretty_inspect}"
@@ -34,6 +37,8 @@ module Orbited
         Orbited.logger.debug "Opened Proxy: #{@proxy.pretty_inspect}"
 
         reset_ping_timer
+
+        TCPConnections[@key] = self
       end
 
       def host
@@ -47,6 +52,10 @@ module Orbited
       def lose_connection
         # TODO self.close ?
         close('loseConnection', true)
+      end
+
+      def create_transport(klass)
+        self.transport = klass.new(self)
       end
 
       def close(reason="", now=false)
@@ -65,8 +74,11 @@ module Orbited
           @close_timer = EM.next_tick { hard_close }
         end
       end
-
-
+      
+      def deferred_renderer
+        transport.deferred_renderer
+      end
+      
       def unbind
         Orbited.logger.debug("connectionLost... already triggered? #{@lost_triggered}")
         unless @lost_triggered
@@ -103,67 +115,6 @@ module Orbited
         # TODO instead of .write/.finish just return OK?
         reset_ping_timer
         [200, {}, 'OK']
-      end
-
-      def parse_data(data)
-        # TODO this method is filled with areas that really should be put
-        #       inside try/except blocks. We don't want errors caused by
-        #       malicious IO.
-        Orbited.logger.debug('RECV ' + data)
-        frames = []
-        current_frame  = []
-        while data.size > 0
-          is_last = data[0,1] == '0'
-          l, data = data[1, data.size].split(',', 2)
-          l = l.to_i
-          arg = data[0,l]
-          data = data[l, data.size]
-          current_frame << arg
-          if is_last
-            frames << current_frame
-            current_frame = []
-          end
-          Orbited.logger.debug([data, frames, current_frame].inspect)
-        end
-
-        # TODO do we really need the id? maybe we should take it out
-        #       of the protocol...
-        #       -mcarter 7-29-08
-        #       I think its a safenet for unintentinal bugs;  we should
-        #       compare it with the last one we received, and error or
-        #       ignore if its not what we expect.
-        #       -- rgl
-        frames.each do |args|
-          Orbited.logger.debug("parse_data frame=#{args.inspect}")
-          id = args[0]
-          name = args[1]
-          if name == 'close'
-            if len(args) != 2
-              # TODO kill the connection with error.
-              pass
-            end
-            lose_connection
-          elsif name == 'data'
-            # TODO should there be a try/except around this block?
-            #       we don't want app-level code to break and cause
-            #       only some packets to be delivered.
-            if args.size != 3
-              # TODO kill the connection with error.
-#              pass
-            end
-            data = Base64.decode64(args[2])
-            Orbited.logger.debug "transport is-a FakeTCPTransport #{@proxy.pretty_inspect}"
-            @proxy.data_received(data)
-          elsif name == 'ping'
-            if args.size != 2
-              # TODO kill the connection with error.
-#              pass
-            end
-            # TODO do we have to do anything? I don't think so...
-            #       -mcarter 7-30-08
-            Orbited.logger.debug('parse_data PING? PONG!');
-          end
-        end
       end
 
       # Called by the callback attached to the comet_transport

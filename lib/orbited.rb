@@ -12,7 +12,7 @@ require 'uuid'
 require 'moneta'
 require 'moneta/memory'
 require 'eventmachine'
-require 'rack/mount'
+require 'rack/router'
 
 class Pathname
   alias / +
@@ -24,9 +24,6 @@ end
 Pathname.send :alias_method, :/, :+
 
 module Orbited
-  NotFound = [404, {}, []].freeze
-  AsyncResponse = [-1, {}, []].freeze
-
   def self.logger
     return @logger if @logger
     @logger       = Logger.new STDOUT
@@ -48,7 +45,11 @@ end
 
 
 Orbited.root.instance_eval do
-  req 'ext/integer.rb'
+  (self/'ext').instance_eval do 
+    req 'integer'
+    req 'rack'
+  end
+  
   req 'headers'
   
   (self/'session').instance_eval do

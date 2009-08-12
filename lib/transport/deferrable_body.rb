@@ -30,18 +30,18 @@ module Orbited
         @queue.flatten.join.size
       end
     
-      private
-        def schedule_dequeue
-          return unless @body_callback
-          EM.next_tick do
-            next unless body = @queue.shift
-            body.each do |chunk|
-              self.all_sent += chunk
-              @body_callback.call(chunk)
-            end
-            schedule_dequeue if @queue.any?
+    private
+      def schedule_dequeue
+        return unless @body_callback
+        EM.next_tick do
+          next unless body = @queue.shift
+          body.each do |chunk|
+            self.all_sent += chunk
+            @body_callback.call(chunk)
           end
+          schedule_dequeue if @queue.any?
         end
+      end
     end
   end
 end

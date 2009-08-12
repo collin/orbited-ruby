@@ -1,15 +1,12 @@
-map "/tcp",     
-  :method => 'post',
-  :to => TCPResourcesController.action(:create)
+post "/tcp",
+  :to => TCPController.action(:create)
   
-map "/tcp/:id", 
-  :method => 'get',  
-  :to => TCPResourcesController.action(:show)
+post "/tcp/:id", 
+  :to => TCPController.action(:write)
   
-map "/tcp/:id/:transport", 
-  :method => 'get', 
-  :toh => TCPResourcesController.action(:transport)
+get "/tcp/:id/:transport_name", 
+  :to => TCPController.action(:connect)
 
-map '/static/*',
-  :method => 'get',
+get '/static/*',
   :to => Rack::Directory.new(Orbited.root/'../static'.to_s)
+  

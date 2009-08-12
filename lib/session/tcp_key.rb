@@ -2,8 +2,7 @@ module Orbited
   module Session
     module TCPKey
       Orbited.logger.warn "
-        I am not a crytographic expert.
-        Be certain this random key is secure enough for your needs.
+        Be certain this random key generator is secure enough for your needs.
         #{__FILE__}
       "
       
@@ -11,8 +10,13 @@ module Orbited
         @source ||= ("a".."z").to_a + (0..9).to_a
       end
       
-      def self.generate size
-        size.take{ source[rand(source.size)] }.join
+      def self.generate keyspace, size=32
+        key = nil
+        while not(key) or keyspace.has_key?(key) do key = make(size) end
+      end
+      
+      def self.make size
+        size.take{ source[rand(source.size)] }.join        
       end
     end
   end

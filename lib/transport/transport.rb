@@ -9,10 +9,8 @@ module Orbited
       'poll' => Polling
     }
     
-    def self.create transport_name, connection
-      klass = Map[transport_name]
-      return NotFound unless klass
-      klass.new connection
+    def self.[](transport_name)
+      Map[transport_name]
     end
     
   end

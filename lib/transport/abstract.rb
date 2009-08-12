@@ -15,18 +15,10 @@ module Orbited
       def initialize tcp_connection
         @tcp_connection = tcp_connection
         @renderer = DeferrableBody.new
-        @open = false
-        @closed = false
-      end
-
-      def render
         @open = true
         @packets = []
         reset_heartbeat
         @tcp_connection.transport_opened self
-        merge_default_headers
-        Orbited.logger.debug "called render on #{pretty_inspect}"
-        [200, headers, @renderer]
       end
 
       def inspect
