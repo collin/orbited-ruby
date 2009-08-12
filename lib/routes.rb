@@ -1,11 +1,11 @@
-post "/tcp",
-  :to => TCPController.action(:create)
+post "/csp",
+  :to => CSPController.action(:create)
   
-post "/tcp/:id", 
-  :to => TCPController.action(:write)
+post "/csp/:id", 
+  :to => CSPController.action(:write)
   
-get "/tcp/:id/:transport_name", 
-  :to => TCPController.action(:connect)
+get "/csp/:id/:transport_name", 
+  :to => CSPController.action(:connect)
 
 get '/static/*',
   :to => Rack::Directory.new(Orbited.root/'../static'.to_s)

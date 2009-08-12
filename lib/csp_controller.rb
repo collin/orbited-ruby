@@ -1,5 +1,5 @@
 module Orbited
-  class TCPController < ActionController::HTTP
+  class CSPController < ActionController::HTTP
     AsyncCallback = "async.callback".freeze
     NotFound      = [404, {}, []].freeze
     AsyncResponse = [-1, {}, []].freeze
