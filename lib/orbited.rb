@@ -14,16 +14,14 @@ require 'moneta/memory'
 require 'eventmachine'
 require 'rack/router'
 
-
-
 module Orbited
   def self.logger
     @logger ||= begin
-      @logger       = Logger.new STDOUT
-      @logger.level = Logger::DEBUG
-      @logger.progname = "orbited-ruby"
-      @logger.info "Started Logging"
-      @logger
+      logger       = Logger.new STDOUT
+      logger.level = Logger::DEBUG
+      logger.progname = "orbited-ruby"
+      logger.info "Started Logging"
+      logger
     end
   end
   
