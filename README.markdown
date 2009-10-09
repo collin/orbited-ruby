@@ -16,17 +16,16 @@ Packed neatly into your Ruby workflow.
 
 Want to give it a try?
 
-    $ rackup -s thin --env none --port 3500 example.ru
+Hold up slice!
 
-### !! Only works with thin for now. Rack needs to codify asynchronous callbacks.
+Haven't you heard? Orbited switched gears and is working on the 0.8 server.
 
-Then open up
+Which includes this awesome awesome thing: Comet Session Protocol
 
-    http://localhost:3500/static/test_socket.html
+http://orbited.org/blog/files/csp.html
 
-Click "connect", watch messages from from irc.freenode.net:6667 come into your browser. That is about the extent that this project works right now.
+This server is being gutted to implement 0.8.
 
-You should see this, more or less:
+It works even less than before. But also has wonderfully smaller amounts of code.
 
-![output from socket test](http://img233.imageshack.us/img233/2808/output.png "socket test output")
-
+Still need to hook up the deferrable body and the proxy socket. Also some http behaviors missing.
