@@ -11,7 +11,7 @@ Packed neatly into your Ruby workflow.
 
     #example.ru
     require 'lib/orbited'
-    Orbited::Middleware.install self
+    use Orbited::Middleware
     
 
 Want to give it a try?
@@ -28,4 +28,4 @@ This server is being gutted to implement 0.8.
 
 It works even less than before. But also has wonderfully smaller amounts of code.
 
-Still need to hook up the deferrable body and the proxy socket. Also some http behaviors missing.
+Still need to hook up the deferrable body and the proxy socket. Also some http behaviors missing
