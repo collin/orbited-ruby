@@ -34,7 +34,7 @@ module Orbited
   end
 end
 
-# Hint: column orinted selection
+# Hint: edit column oriented selection
 require Orbited.root+'ext/rack'
 require Orbited.root+'orbited/packet_batch'
 require Orbited.root+'orbited/middleware'
