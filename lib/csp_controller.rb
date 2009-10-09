@@ -6,33 +6,50 @@ module Orbited
     Okay          = [200, {}, 'OK'].freeze
         
     include AbstractController::Callbacks
+    include AbstractController::ActionArgs
 
-    before :get_connection, :except => [:open]
-    after  :acknowledge,    :except => [:open]
+    before :get_connection, :except => [:handshake]
+    before :acknowledge,    :except => [:handshake]
 
-    def create
-      [200, {}, TCPConnection.new.id.to_s]
+    comet handshake close send reflect streamtest
+    
+    def handshake data
+      [200, {}, Orbited::Session.new.handshake]
     end
-  
-    def write
-      Protocol.new(request.body).write_to_connection(@resource)
-      Okay
-    end
-  
-    def connec id, transport_name
-      return NotFound unless @connection.create_transport(Transport[transport_name])
-      request.async_callback [200, {}, @connection.deferred_renderer]
-      AsyncResponse  
-    end
-  
-  private
-    def acknowledge
-      params['ack'] and @connection.acknowledge(params['ack']) 
+
+    def comet
+      return [200, {}, @comet_session.unacknowledged_packets] unless @comet_session.is_streaming?
+      request.async_callback [200, {}, @comet_session.deferred_renderer]
+      AsyncResponse        
     end
     
-    def get_connection
-      @connection = TCPConnection.get params[:id]
-      raise NotFound unless @connection
+    def close
+      @comet_session.close
+      Okay
+    end
+    
+    def send
+      packet = Packet.new ...
+      @comet_session.send packet
+      Okay
+    end
+
+    # def reflect
+    # 
+    # end
+
+    # def streamtest
+    #   
+    # end
+  
+  private
+    def acknowledge ack=nil
+      ack and @connection.acknowledge(ack) 
+    end
+    
+    def get_connection id
+      @comet_session = Orbited::Session.get session_key
+      raise NotFound unless @comet_session
     end
   end
 end

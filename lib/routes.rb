@@ -1,12 +1,5 @@
-post "/csp",
-  :to => CSPController.action(:create)
-  
-post "/csp/:id", 
-  :to => CSPController.action(:write)
-  
-get "/csp/:id/:transport_name", 
-  :to => CSPController.action(:connect)
-
-get '/static/*',
-  :to => Rack::Directory.new(Orbited.root/'../static'.to_s)
-  
+%w(comet handshake close send reflect streamtest).each do |action|
+  %w(get post) do |_method|
+    map "/csp/#{action}", :method => _method, :to => CSPController.action(action)
+  end
+end
