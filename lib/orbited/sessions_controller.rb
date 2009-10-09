@@ -1,5 +1,5 @@
 module Orbited
-  class CSPController < ActionController::HTTP
+  class SessionsPController < ActionController::HTTP
     AsyncCallback = "async.callback".freeze
     NotFound      = [404, {}, []].freeze
     AsyncResponse = [-1, {}, []].freeze
@@ -10,15 +10,15 @@ module Orbited
 
     before :get_connection, :except => [:handshake]
     before :acknowledge,    :except => [:handshake]
-
-    comet handshake close send reflect streamtest
     
-    def handshake data
-      [200, {}, Orbited::Session.new.handshake]
+    def handshake
+      [200, {}, {:session => Orbited::Session.new(params).key}.to_json]
     end
 
+    # the comet http connection
+    # packets go OUT over this connection
     def comet
-      return [200, {}, @comet_session.unacknowledged_packets] unless @comet_session.is_streaming?
+      return [200, {}, @comet_session.unacknowledged_packets.to_json] unless @comet_session.is_streaming?
       request.async_callback [200, {}, @comet_session.deferred_renderer]
       AsyncResponse        
     end
@@ -28,6 +28,8 @@ module Orbited
       Okay
     end
     
+    # incoming packets
+    # a message from the client
     def send
       packet = Packet.new ...
       @comet_session.send packet
@@ -44,7 +46,7 @@ module Orbited
   
   private
     def acknowledge ack=nil
-      ack and @connection.acknowledge(ack) 
+      ack and @comet_session ch.acknowledge(ack) 
     end
     
     def get_connection id
