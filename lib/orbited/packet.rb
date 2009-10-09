@@ -13,6 +13,7 @@ module Orbited
     
   private
     attr_accessor :id, :data
+    attr_reader :codec
     
     # data can be nil to indicate close of connection
     def data= data=nil

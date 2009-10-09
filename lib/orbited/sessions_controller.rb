@@ -12,27 +12,32 @@ module Orbited
     before :acknowledge,    :except => [:handshake]
     
     def handshake
-      [200, {}, {:session => Orbited::Session.new(params).key}.to_json]
+      @csp_socket = CSPSocket.new(params)
+      [200, {}, {:session => @csp_socket.key}.to_json]
     end
 
     # the comet http connection
     # packets go OUT over this connection
     def comet
-      return [200, {}, @comet_session.unacknowledged_packets.to_json] unless @comet_session.is_streaming?
-      request.async_callback [200, {}, @comet_session.deferred_renderer]
+      return [200, {}, @csp_socket.unacknowledged_packets.to_json] unless @csp_socket.streaming?
+      @csp_socket.deferrable_body = DeferrableBody.new
+      EM.next_tick{ request.async_callback [200, {}, @csp_socket.deferrable_body] }
       AsyncResponse        
     end
     
     def close
-      @comet_session.close
+      @csp_socket.close
       Okay
     end
     
     # incoming packets
     # a message from the client
-    def send
-      packet = Packet.new ...
-      @comet_session.send packet
+    # data might be the request body
+    def send d=nil
+      data = d || request.body
+      raise NotFound unless data
+      packet = Packet.new(JSON.parse(data))
+      @csp_socket.send packet
       Okay
     end
 
@@ -46,12 +51,12 @@ module Orbited
   
   private
     def acknowledge ack=nil
-      ack and @comet_session ch.acknowledge(ack) 
+      ack and @csp_socket ch.acknowledge(ack) 
     end
     
     def get_connection id
-      @comet_session = Orbited::Session.get session_key
-      raise NotFound unless @comet_session
+      @csp_socket = CSPSocket.get session_key
+      raise NotFound unless @csp_socket
     end
   end
 end
