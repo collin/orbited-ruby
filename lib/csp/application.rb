@@ -11,16 +11,16 @@ module CSP
       app = self
       rack_builder.map(@mount_point) do
         use(Rack::Static, :urls => [Static], :root => CSP.root)
-        map(Reflect)    { run app.action(:reflect) }
-        map(Handshake)  { run app.action(:handshake) }
-        map(Comet)      { run app.action(:comet) }
-        map(Close)      { run app.action(:close) }
-        map(Send)       { run app.action(:csp_send) }
+        map(Reflect)    { run app.method(:reflect) }
+        map(Handshake)  { run app.method(:handshake) }
+        map(Comet)      { run app.method(:comet) }
+        map(Close)      { run app.method(:close) }
+        map(Send)       { run app.method(:csp_send) }
       end
     end
     
     def environment_filters(env)
-      request = AsyncRequest(env)
+      request = AsyncRequest.new(env)
       session = @connection_class.get(request.params[SessionKey])
       session.update_settings(request.params)
       session.acknowledge(request.params[AckId]) if request.params[AckId]
@@ -29,9 +29,8 @@ module CSP
     
     def handshake(env)
       CSP.logger.info("Initiating handshake")
-      request = AsyncRequest(env)
+      request = AsyncRequest.new(env)
       session = @connection_class.new(request)
-      
       # go asynchronous. Handshakes should be fast.
       EventMachine.next_tick{ session.post_init }
       
@@ -46,7 +45,7 @@ module CSP
       
       # Close the previous request if it is still open.
       # CSP requires only one /comet request be open per session at a time.
-      session.async_body.close if session.open?
+      session.async_body.succeed if session.open?
       
       immediate_response = session.unacknowledged_and_unsent_packets
       session.mark_packets_as_sent!
@@ -59,8 +58,9 @@ module CSP
         # headers['TrasnsferEncoding'] = 'chunked'
         async_body = AsyncBody.new      
         request.respond_asynchronously([200, headers, async_body])
+        #TODO: Send an immediate response if there are unacknowledged packets
         # Send the immediate response on the next tick.
-        EventMachine.next_tick{ async_body.send_data(immediate_response) }
+        # EventMachine.next_tick{ async_body.send_data(immediate_response) }
         session.async_body = async_body
         session.start_timer
         AsyncResponse
@@ -95,14 +95,8 @@ module CSP
     end
         
     def reflect(env)
-      request = AsyncRequest(env)
+      request = CSP::AsyncRequest(env)
       [200, {}, request.params[Data]] # send the Data param back directly.
     end
   end
 end
-
-require CSP.root+'csp/application'
-require CSP.root+'csp/async_body'
-require CSP.root+'csp/async_response'
-require CSP.root+'csp/connection'
-require CSP.root+'csp/packet'

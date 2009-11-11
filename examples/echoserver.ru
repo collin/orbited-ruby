@@ -1,4 +1,4 @@
-require '../lib/csp'
+require 'lib/csp'
 class EchoConnection < CSP::Connection
   alias receive_data send_data
 end

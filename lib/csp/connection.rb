@@ -20,7 +20,7 @@ module CSP
     
     def self.discard_session(session)
       @@all_sessions.delete(session.id)
-      session.async_body.close if session.open?
+      session.async_body.succeed if session.open?
     end
     
     def initialize(env)
@@ -35,6 +35,10 @@ module CSP
     def acknowledge(packet_id)
       @unacknowledged_packets.reject!{ |packet| packet.id <= packet_id.to_i }
       Connection.discard_session(self) if closed?
+    end
+    
+    def cancel_timer
+      EventMachine.cancel_timer(@timer) if @timer
     end
     
     def close!
@@ -78,20 +82,20 @@ module CSP
       if open?
         CSP.logger.info("Sending unsent packets. #{inspect}")
         async_body.send_data(serialize_packet_batch(@unsent_packets))
-        # async_body.close unless self[IsStreaming]
+        async_body.succeed unless self[IsStreaming]
         mark_packets_as_sent!
       end
     end
     
     def start_timer(&block)
-      EventMachine.cancel_timer(@timer) if @timer # If there is already a timer running, cancel it.
+      cancel_timer # If there is already a timer running, cancel it.
       CSP.logger.info("Starting #{self[Duration] || DefaultDuration} second timer for #{self}")
       @timer = EventMachine.add_timer(self[Duration] || DefaultDuration) do
         # once the timer has been used, cancel it and set it to nil
-        EventMachine.cancel_timer(@timer)
+        cancel_timer
         CSP.logger.info("Cancelled timer for #{self}")
         @timer = nil
-        async_body.close
+        async_body.succeed
       end
     end
     
