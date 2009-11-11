@@ -1,12 +1,12 @@
 module CSP
   # TODO: decide whether or not to make individual attr_readers for each setting
-  class Connection < Hash
+  class Session < Hash
     DefaultDuration = 30
 
     attr_reader :id
     attr_accessor :async_body
     
-    # Override these methods in subclasses of Connection to build specific applications
+    # Override these methods in subclasses of Session to build specific applications
     def post_init; end
     def receive_data(data); end
     def unbind; end
@@ -34,11 +34,14 @@ module CSP
     
     def acknowledge(packet_id)
       @unacknowledged_packets.reject!{ |packet| packet.id <= packet_id.to_i }
-      Connection.discard_session(self) if closed?
+      Session.discard_session(self) if closed?
     end
     
     def cancel_timer
-      EventMachine.cancel_timer(@timer) if @timer
+      if @timer
+        EventMachine.cancel_timer(@timer) 
+        @timer = nil
+      end
     end
     
     def close!
@@ -55,7 +58,7 @@ module CSP
     end
     
     def inspect
-      "#<#{self.class.name}#{@id} #{@unacknowledged_packets.size} unacknowledged_packets #{@unsent_packets.size} unsent_packets>"
+      "#<#{self.class.name}#{@id} closed:#{closed?.inspect} open:#{open?.inspect} #{@unacknowledged_packets.size} unacknowledged_packets #{@unsent_packets.size} unsent_packets>"
     end
     alias to_s inspect
     
@@ -92,10 +95,11 @@ module CSP
       CSP.logger.info("Starting #{self[Duration] || DefaultDuration} second timer for #{self}")
       @timer = EventMachine.add_timer(self[Duration] || DefaultDuration) do
         # once the timer has been used, cancel it and set it to nil
-        cancel_timer
-        CSP.logger.info("Cancelled timer for #{self}")
-        @timer = nil
+        # CSP requires a packet batch, even if it's empty.
+        # TODO: UNDERSTAND THIS and maybe get it fixed if it's a bug in js.io
+        async_body.send_data(serialize_packet_batch([]))
         async_body.succeed
+        CSP.logger.info("Cancelled timer for #{self}")
       end
     end
     

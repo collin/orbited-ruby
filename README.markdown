@@ -23,10 +23,10 @@ CSP is the substrate upon which RubyOrbited shall be built. Here's an example CS
 
     # examples/echoserver.ru
     require '../lib/csp'
-    class EchoConnection < CSP::Connection
+    class EchoSession < CSP::Session
       alias receive_data send_data
     end
-    echo_app = CSP::Application.new(EchoConnection, "/echo")
+    echo_app = CSP::Application.new(EchoSession, "/echo")
     echo_app.mount(self)
     
 
@@ -34,9 +34,9 @@ Want to give it a try? You have to have thin installed. As recent a version as y
 
     rackup -E none -s thin examples/echoserver.ru
 
-Want to write your own? Just subclass CSP::Connection.
+Want to write your own? Just subclass CSP::Session.
 
-    class MyConnectionClass < CSP::Connection
+    class MySessionClass < CSP::Session
       # And override these methods.
       def post_init; end
       def recieve_data(data); end

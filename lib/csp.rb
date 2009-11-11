@@ -59,5 +59,5 @@ end
 require CSP.root+'csp/async_request'
 require CSP.root+'csp/async_body'
 require CSP.root+'csp/packet'
-require CSP.root+'csp/connection'
+require CSP.root+'csp/session'
 require CSP.root+'csp/application'

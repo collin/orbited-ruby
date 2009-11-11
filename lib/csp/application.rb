@@ -47,8 +47,6 @@ module CSP
       # CSP requires only one /comet request be open per session at a time.
       session.async_body.succeed if session.open?
       
-      immediate_response = session.unacknowledged_and_unsent_packets
-      session.mark_packets_as_sent!
       
       headers = { 'Content-Type'=>session[ContentType] || DefaultContentType,
                   'Cache'=>'nocache',
@@ -58,13 +56,14 @@ module CSP
         # headers['TrasnsferEncoding'] = 'chunked'
         async_body = AsyncBody.new      
         request.respond_asynchronously([200, headers, async_body])
-        #TODO: Send an immediate response if there are unacknowledged packets
         # Send the immediate response on the next tick.
         # EventMachine.next_tick{ async_body.send_data(immediate_response) }
         session.async_body = async_body
         session.start_timer
         AsyncResponse
       else
+        immediate_response = session.unacknowledged_and_unsent_packets
+        session.mark_packets_as_sent!
         # Send the immediate response right away and close the connection.
         [200, headers, immediate_response]
       end
@@ -73,7 +72,7 @@ module CSP
     def csp_send(env)
       request, session = *environment_filters(env)
       
-      CSP.logger.info("Recieved data for #{session}: #{request.params[Data]}")
+      CSP.logger.info("Recieved data for #{session}\n    #{request.params[Data]}")
       
       JSON.parse(request.params[Data]).each do |data|
         id, encoding, data = *data
