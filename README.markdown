@@ -22,7 +22,7 @@ This server has been replaced! What we have here is a CSP server written for rac
 CSP is the substrate upon which RubyOrbited shall be built. Here's an example CSP app in Ruby:
 
     # examples/echoserver.ru
-    require '../lib/csp'
+    require 'lib/csp'
     class EchoSession < CSP::Session
       alias receive_data send_data
     end
