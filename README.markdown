@@ -34,6 +34,10 @@ Want to give it a try? You have to have thin installed. As recent a version as y
 
     rackup -E none -s thin examples/echoserver.ru
 
+Then browse to
+
+    http://localhost:9292/echo/static/echotest.html
+
 Want to write your own? Just subclass CSP::Session.
 
     class MySessionClass < CSP::Session
