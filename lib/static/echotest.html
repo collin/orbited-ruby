@@ -1,0 +1,37 @@
+<html>
+    <head>
+        <script src="/echo/static/csp.js"></script>
+        <script src="/echo/static/jquery.js"></script>
+        <script>
+            jsio("from jsio.csp.client import CometSession");
+            jQuery(function($) {
+                session = new CometSession();
+                session.onread = function(data) { 
+                    $("<li>").text(data).prependTo('ol')
+                }
+                session.connect("http://localhost:9292/echo");
+                session.onconnect = function() {
+                    $(document.body).removeClass("connecting");
+                    $('input').focus();
+                }
+                $('form').submit(function() {
+                    session.write($('input').val());;
+                    $('input').val('');
+                    return false
+                });
+            });
+        </script>
+        <style>
+            .connecting { display: none; }
+            input {width: 300px; margin: 0 1em;}
+        </style>
+    </head>
+    <body class="connecting">
+        <form>
+            <label>Try out the EchoServer</label>
+            <input type="text">
+            <button>Press Enter to: ECHO!</button>            
+        </form>
+        <ol></ol>
+    </body>
+</html>
