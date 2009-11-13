@@ -2,8 +2,8 @@ module CSP
   class Application
     DefaultContentType = "text/html".freeze
     
-    def initialize(connection_class, mount_point)
-      @connection_class = connection_class
+    def initialize(session_class, mount_point)
+      @session_class = session_class
       @mount_point = mount_point
     end
     
@@ -11,18 +11,25 @@ module CSP
       app = self
       rack_builder.map(@mount_point) do
         use(Rack::Static, :urls => [Static], :root => CSP.root)
-        map(Reflect)    { run app.method(:reflect) }
-        map(Handshake)  { run app.method(:handshake) }
-        map(Comet)      { run app.method(:comet) }
-        map(Close)      { run app.method(:close) }
-        map(Send)       { run app.method(:csp_send) }
+        map(Reflect)    { run app.action(:reflect) }
+        map(Handshake)  { run app.action(:handshake) }
+        map(Comet)      { run app.action(:comet) }
+        map(Close)      { run app.action(:close) }
+        map(Send)       { run app.action(:csp_send) }
       end
     end
     
+    alias action method
+    # def action(action_name)
+    #   # Note the duplication. Each action runs in the context of a dup of this object.
+    #   # This way per-request instance variables may be set without spillage. 
+    #   dup.method(action_name)
+    # end
+    
     def environment_filters(env)
       request = AsyncRequest.new(env)
-      session = @connection_class.get(request.params[SessionKey])
-      session.update_settings(request.params)
+      session = @session_class.get(request.params[SessionKey])
+      session.update_settings(request)
       session.acknowledge(request.params[AckId]) if request.params[AckId]
       [request, session]
     end
@@ -30,7 +37,7 @@ module CSP
     def handshake(env)
       CSP.logger.info("Initiating handshake")
       request = AsyncRequest.new(env)
-      session = @connection_class.new(request)
+      session = @session_class.new(request)
       # go asynchronous. Handshakes should be fast.
       EventMachine.next_tick{ session.post_init }
       

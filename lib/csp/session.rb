@@ -3,7 +3,7 @@ module CSP
   class Session < Hash
     DefaultDuration = 30
 
-    attr_reader :id
+    attr_reader :id, :request
     attr_accessor :async_body
     
     # Override these methods in subclasses of Session to build specific applications
@@ -23,8 +23,9 @@ module CSP
       session.async_body.succeed if session.open?
     end
     
-    def initialize(env)
-      update_settings(env.params)
+    def initialize(request)
+      update_settings(request.params)
+      @request = request
       @id = UUID.generate
       @@all_sessions[@id] = self
       @unacknowledged_packets = [] # Still storing everything in memory.
@@ -111,9 +112,10 @@ module CSP
       serialize_packet_batch(@unacknowledged_packets | @unsent_packets)
     end
     
-    def update_settings(params)
+    def update_settings(request)
       # TODO: decide whether or not to make individual attr_readers for each setting
       CometSessionSettings.each{ |key| self[key] = params[key] if params[key] }
-    end
+      @request = request
+    end    
   end
 end
