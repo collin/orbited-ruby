@@ -79,7 +79,7 @@ module CSP
     def csp_send(env)
       request, session = *environment_filters(env)
       
-      CSP.logger.info("Recieved data for #{session}\n    #{request.params[Data]}")
+      CSP.logger.info("Received data for #{session}\n    #{request.params[Data]}")
       
       JSON.parse(request.params[Data]).each do |data|
         id, encoding, data = *data

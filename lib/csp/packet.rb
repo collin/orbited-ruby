@@ -1,3 +1,13 @@
+class String
+  require 'enumerator'
+
+  def bytes(&block)
+    return to_enum(:each_byte) unless block_given?
+    each_byte &block
+  end
+end unless ''.respond_to?(:bytes)
+
+
 module CSP
   class Packet
     PlainTextByteRange = (32..126).freeze

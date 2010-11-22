@@ -12,7 +12,7 @@ require 'rack'
 module CSP
   AsyncResponse = [-1, {}, []].freeze
   
-  RequestPrefex = "rp".freeze
+  RequestPrefix = "rp".freeze
   RequestSuffix = "rs".freeze
   Duration      = "du".freeze
   IsStreaming   = "is".freeze
@@ -25,7 +25,7 @@ module CSP
   ContentType   = "ct".freeze
   Prebuffer     = "prebuffer".freeze
   SSEId         = "sse_id".freeze
-  CometSessionSettings = [RequestPrefex, RequestSuffix, Duration, IsStreaming,
+  CometSessionSettings = [RequestPrefix, RequestSuffix, Duration, IsStreaming,
                           Interval, PrebufferSize, Preamble, BatchPrefix, 
                           BatchSuffix, SSE, ContentType, Prebuffer, SSEId].freeze
   

@@ -24,8 +24,7 @@ module CSP
     end
     
     def initialize(request)
-      update_settings(request.params)
-      @request = request
+      update_settings(request)
       @id = UUID.generate
       @@all_sessions[@id] = self
       @unacknowledged_packets = [] # Still storing everything in memory.
@@ -55,11 +54,15 @@ module CSP
     end
     
     def created
-      "#{self[RequestPrefex]}({\"session\":\"#{id}\"})#{self[RequestSuffix]}"
+      "#{self[RequestPrefix]}({\"session\":\"#{id}\"})#{self[RequestSuffix]}"
     end
     
     def inspect
-      "#<#{self.class.name}#{@id} closed:#{closed?.inspect} open:#{open?.inspect} #{@unacknowledged_packets.size} unacknowledged_packets #{@unsent_packets.size} unsent_packets>"
+      "#<#{self.class.name}#{@id} " +
+      "closed:#{closed?.inspect} " +
+      "open:#{open?.inspect} " +
+      "#{@unacknowledged_packets.size} unacknowledged_packets " +
+      "#{@unsent_packets.size} unsent_packets>"
     end
     alias to_s inspect
     
@@ -74,7 +77,7 @@ module CSP
     end
     
     def okay
-      "#{self[RequestPrefex]}(\"OK\")#{self[RequestSuffix]}"
+      "#{self[RequestPrefix]}(\"OK\")#{self[RequestSuffix]}"
     end
     
     def open?
@@ -114,7 +117,7 @@ module CSP
     
     def update_settings(request)
       # TODO: decide whether or not to make individual attr_readers for each setting
-      CometSessionSettings.each{ |key| self[key] = params[key] if params[key] }
+      CometSessionSettings.each{ |key| self[key] = request.params[key] if request.params[key] }
       @request = request
     end    
   end

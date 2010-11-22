@@ -70,7 +70,7 @@ module Orbited
       host, port = *data
       return unbind_socket(socket_id, InvalidHandshake) if host.nil? or port.nil?
       
-      alowed = Orbited.config[:access].find do |source|
+      allowed = Orbited.config[:access].find do |source|
         source == AnySource || source == @request.host
       end
       
@@ -80,7 +80,7 @@ module Orbited
         return
       end
      
-      Orbited.logger.info("new connection from #{peer.host}:#{peer.port} => #{host}:#{port}"
+      Orbited.logger.info("new connection from #{peer.host}:#{peer.port} => #{host}:#{port}")
       EventMachine.connect(host, port, Outgoing, self, socket_id, host, port)
       self.buffers[socketId] = []
     end

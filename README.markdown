@@ -43,7 +43,7 @@ Want to write your own? Just subclass CSP::Session.
     class MySessionClass < CSP::Session
       # And override these methods.
       def post_init; end
-      def recieve_data(data); end
+      def receive_data(data); end
       def unbind; end
     end
 
