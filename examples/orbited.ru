@@ -1,4 +1,7 @@
+# orbited.ru
+
 require 'lib/csp'
+
 module Orbited
   FrameOpen = 0
   FrameClose = 1
