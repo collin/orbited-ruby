@@ -1,4 +1,7 @@
-# orbited.ru
+# echoserver.ru - example app; echoes input text in list
+#
+#  Usage: DOES NOT WORK YET
+
 require File.join(File.dirname(File.expand_path(__FILE__)),'..', 'lib', 'csp')
 
 module Orbited

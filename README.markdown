@@ -30,25 +30,27 @@ Here's an example CSP app in Ruby:
     end
     echo_app = CSP::Application.new(EchoSession, "/echo")
     echo_app.mount(self)
+
+Try out a couple example servers that are working right now:
+
+First run bundle install to
+
+## examples/chatserver.ru - echoes input text in list to all connected sessions
+
+Usage:
+
+  % bundle exec rackup -E none -s thin examples/chatserver.ru
+
+  http://localhost:9292/echo/static/echotest.html
+
+## examples/echoserver.ru - echoes input text in list
+
+Usage:
+
+  % bundle exec rackup -E none -s thin examples/echoserver.ru
+
+  http://localhost:9292/echo/static/echotest.html
     
-
-Want to give it a try?  You have to have thin installed.
-As recent a version as you can manage.  I'm on 1.2.5.
-
-    rackup -E none -s thin examples/echoserver.ru
-
-Then browse to
-
-    http://localhost:9292/echo/static/echotest.html
-
-Alternatively, try:
-
-    rackup -E none -s thin examples/env.ru
-
-Then browse to
-
-    http://localhost:9292/echo/static/env.html
-
 Want to write your own? Just subclass CSP::Session.
 
     class MySessionClass < CSP::Session

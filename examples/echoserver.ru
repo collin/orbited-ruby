@@ -2,9 +2,9 @@
 #
 #  Usage:
 #
-#    % rackup -E none -s thin examples/echoserver.ru
+#    % bundle exec rackup -E none -s thin examples/echoserver.ru
 #
-#    http://localhost:9292/echo/static/echoserver.html
+#    http://localhost:9292/echo/static/echotest.html
 
 require File.join(File.dirname(File.expand_path(__FILE__)),'..', 'lib', 'csp')
 
