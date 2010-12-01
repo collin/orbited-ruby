@@ -1,4 +1,4 @@
-require 'lib/csp'
+require File.join(File.dirname(File.expand_path(__FILE__)),'..', 'lib', 'csp')
 class EchoSession < CSP::Session
   def receive_data(data)
     @@all_sessions.each do |id, session|

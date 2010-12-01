@@ -1,4 +1,4 @@
-require 'lib/csp'
+require File.join(File.dirname(File.expand_path(__FILE__)),'..', 'lib', 'csp')
 module Orbited
   FrameOpen = 0
   FrameClose = 1
