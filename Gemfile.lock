@@ -1,0 +1,18 @@
+GEM
+  remote: http://rubygems.org/
+  specs:
+    eventmachine (0.12.10)
+    json (1.4.6)
+    macaddr (1.0.0)
+    rack (1.2.1)
+    uuid (2.3.1)
+      macaddr (~> 1.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  eventmachine
+  json
+  rack
+  uuid
