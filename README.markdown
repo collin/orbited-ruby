@@ -17,9 +17,11 @@ Which includes this awesome awesome thing: Comet Session Protocol
 
 http://orbited.org/blog/files/csp.html
 
-This server has been replaced! What we have here is a CSP server written for rack.
+This server has been replaced!
+What we have here is a CSP server written for rack.
 
-CSP is the substrate upon which RubyOrbited shall be built. Here's an example CSP app in Ruby:
+CSP is the substrate upon which RubyOrbited shall be built.
+Here's an example CSP app in Ruby:
 
     # examples/echoserver.ru
     require '../lib/csp'
@@ -30,13 +32,22 @@ CSP is the substrate upon which RubyOrbited shall be built. Here's an example CS
     echo_app.mount(self)
     
 
-Want to give it a try? You have to have thin installed. As recent a version as you can manage. I'm on 1.2.5.
+Want to give it a try?  You have to have thin installed.
+As recent a version as you can manage.  I'm on 1.2.5.
 
     rackup -E none -s thin examples/echoserver.ru
 
 Then browse to
 
     http://localhost:9292/echo/static/echotest.html
+
+Alternatively, try:
+
+    rackup -E none -s thin examples/env.ru
+
+Then browse to
+
+    http://localhost:9292/echo/static/env.html
 
 Want to write your own? Just subclass CSP::Session.
 
@@ -47,5 +58,6 @@ Want to write your own? Just subclass CSP::Session.
       def unbind; end
     end
 
-And look into lib/static/echotest.html to get started with jsio on the client side.
+And look into lib/static/echotest.html
+to get started with jsio on the client side.
 
