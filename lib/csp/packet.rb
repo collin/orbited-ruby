@@ -26,15 +26,15 @@ module CSP
     end
   
     def data
-      base64_encode? ? @data.pack("m").tr('+/','-_').gsub("\n",'') : @data
+      base64_encode? ? [@data].pack("m").tr('+/','-_').gsub("\n",'') : @data
     end
   
     def encoding
       base64_encode? ? Base64 : PlainText
     end
   
-    def to_json
-      %{[#{@id},#{encoding},"#{data}"]}
+    def to_json(*)
+      [@id, encoding, data].to_json
     end
   end
 end

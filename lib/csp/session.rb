@@ -1,7 +1,7 @@
 module CSP
   # TODO: decide whether or not to make individual attr_readers for each setting
   class Session < Hash
-    DefaultDuration = 2
+    DefaultDuration = 30
 
     attr_reader :id, :request
     attr_accessor :async_body
@@ -15,6 +15,7 @@ module CSP
     @@all_sessions = {}
     
     def self.get(id)
+      puts @@all_sessions.inspect
       @@all_sessions[id]
     end
     
@@ -86,12 +87,16 @@ module CSP
     
     def send_data(data)
       @unsent_packets << Packet.new(next_packet_id, data)
-      if open?
-        CSP.logger.info("Sending unsent packets. #{inspect}")
-        async_body.send_data(serialize_packet_batch(@unsent_packets))
-        async_body.succeed unless self[IsStreaming]
-        mark_packets_as_sent!
-      end
+      CSP.logger.info("open? #{async_body} #{async_body.open?}")
+      flush! if open?
+    end
+    
+    def flush!
+      CSP.logger.info("Sending unsent packets. #{inspect}")
+      async_body.send_data(serialize_packet_batch(@unsent_packets))
+      # CSP.logger.info("ISSTREAMING?", self[IsStreaming])
+      async_body.succeed unless self[IsStreaming]
+      mark_packets_as_sent!
     end
     
     def start_timer(&block)
@@ -101,13 +106,13 @@ module CSP
         # once the timer has been used, cancel it and set it to nil
         # CSP requires a packet batch, even if it's empty.
         # TODO: UNDERSTAND THIS and maybe get it fixed if it's a bug in js.io
-        async_body.send_data(serialize_packet_batch([]))
-        async_body.succeed
+        flush!
         CSP.logger.info("Cancelled timer for #{self}")
       end
     end
     
     def serialize_packet_batch(packets)
+      packet_json = 
       "#{self[BatchPrefix]}(#{packets.to_json})#{self[BatchSuffix]}#{self[SSEId]};"
     end
     

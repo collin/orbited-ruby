@@ -9,14 +9,12 @@ module CSP
     
     # And when 'send_data' gets called, we use the block to send data down the wire.
     def send_data(body)
-      body.each do |chunk|
-        @body_callback.call(chunk)
-      end
+      @body_callback.call body
     end
     
     def open?
       # @deferred_status will be :success or :failure when closed
-      @deferred_status.nil?
+      @deferred_status == :unknown
     end
   end
   

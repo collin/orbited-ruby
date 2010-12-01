@@ -42,7 +42,7 @@ module CSP
       EventMachine.next_tick{ session.post_init }
       
       CSP.logger.info("Completed handshake for #{session}")
-      [200, {}, session.created]
+      [200, {"Content-Type" => session[ContentType]}, [session.created]]
     end
 
     def comet(env)
@@ -55,7 +55,7 @@ module CSP
       session.async_body.succeed if session.open?
       
       
-      headers = { 'Content-Type'=>session[ContentType] || DefaultContentType,
+      headers = { 'Content-Type'=> session[ContentType] || DefaultContentType,
                   'Cache'=>'nocache',
                   'Pragma'=>'nocache'}
       
@@ -79,9 +79,11 @@ module CSP
     def csp_send(env)
       request, session = *environment_filters(env)
       
-      CSP.logger.info("Received data for #{session}\n    #{request.params[Data]}")
+      data = request.body.read || request.params[Data]
+      CSP.logger.info("Received data for #{session}\n    #{data}")
       
-      JSON.parse(request.params[Data]).each do |data|
+      CSP.logger.info request.params.inspect
+      JSON.parse(data).each do |data|
         id, encoding, data = *data
         data = encoding == 1 ? "#{data}====".tr('-_','+/').unpack('m') : data
         EventMachine.next_tick{ session.receive_data(data) }
