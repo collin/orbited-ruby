@@ -1,7 +1,7 @@
 module CSP
   # TODO: decide whether or not to make individual attr_readers for each setting
   class Session < Hash
-    DefaultDuration = 30
+    DefaultDuration = 2
 
     attr_reader :id, :request
     attr_accessor :async_body

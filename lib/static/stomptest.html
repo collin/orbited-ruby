@@ -1,0 +1,61 @@
+<html>
+    <head>
+        <script src="jsio/jsio.js"></script>
+        <script src="http://localhost:8000/csp/static/socket.js"></script>
+        <script src="jquery.js"></script>
+        <script>
+            jsio("from net.csp.client import CometSession")
+            jsio("from net.protocols.stomp import StompProtocol");
+            jsio("import net");
+            
+            jQuery(function($) {
+                Orbited = socket;
+                csp = {CometSession: CometSession};
+                client = new StompProtocol();
+                socket.settings.hostname = 'localhost';
+                socket.settings.port =  8000;
+                
+                net.connect(client, 'csp', {hostname: 'localhost', port: 61613, url: '/csp'});
+
+                client.connectionMade = function() {
+                    client.subscribe("CHANNEL_1");
+                    client.frameRecieved = function() {
+                        console.dir(arguments);
+                    }
+                    client.send("CHANNEL_1", "HELLO FUCKING WORLD!");                    
+                }
+
+                // csp = socket;
+                // sock = new socket.TCPSocket(CometSession);
+                // sock.open('localhost', 61613);
+                // stomp = new StompProtocol();
+                // 
+                // stomp.onread = function(data) { 
+                //     $("<li>").text(data).prependTo('ol')
+                // }
+                // stomp.connect("http://localhost:9292/echo");
+                // stomp.onconnect = function() {
+                //     $(document.body).removeClass("connecting");
+                //     $('input').focus();
+                // }
+                // $('form').submit(function() {
+                //     session.write($('input').val());;
+                //     $('input').val('');
+                //     return false
+                // });
+            });
+        </script>
+        <style>
+            .connecting { display: none; }
+            input {width: 300px; margin: 0 1em;}
+        </style>
+    </head>
+    <body class="connecting">
+        <form>
+            <label>Try out the EchoServer</label>
+            <input type="text">
+            <button>Press Enter to: ECHO!</button>            
+        </form>
+        <ol></ol>
+    </body>
+</html>

@@ -19,4 +19,5 @@ module CSP
       @deferred_status.nil?
     end
   end
+  
 end

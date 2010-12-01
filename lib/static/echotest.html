@@ -1,9 +1,9 @@
 <html>
     <head>
-        <script src="/echo/static/csp.js"></script>
+        <script src="/echo/static/jsio/jsio.js"></script>
         <script src="/echo/static/jquery.js"></script>
         <script>
-            jsio("from jsio.csp.client import CometSession");
+            jsio("from net.csp.client import CometSession");
             jQuery(function($) {
                 session = new CometSession();
                 session.onread = function(data) { 
