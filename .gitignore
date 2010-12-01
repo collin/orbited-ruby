@@ -1,3 +1,4 @@
 trunk/
 *~
 *.DS_Store
+.bundle
